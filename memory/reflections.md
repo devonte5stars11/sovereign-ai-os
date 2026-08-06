@@ -162,3 +162,13 @@
 **Latency:** 0ms | cost $0.00000
 **Artifact:** 5c78829b-d2ed-445e-8a2d-fec1736aaa6d
 **Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 15:35 UTC — pipeline run
+**Task:** Operational hardening demo note
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 7a637ce8-bffc-44be-91c3-5b0100383004
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
