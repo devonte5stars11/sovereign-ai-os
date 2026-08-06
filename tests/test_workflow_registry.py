@@ -1,7 +1,6 @@
 """Workflow registry: registration, validation, promotion."""
 
 import pytest
-
 from ai_os_kernel import GraphNode, PromptGraph, Workflow, WorkflowRegistry
 from ai_os_kernel.workflow_registry import WorkflowError
 

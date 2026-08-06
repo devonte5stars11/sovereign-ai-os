@@ -1,7 +1,6 @@
 """Prompt graphs: assembly, validation, topological ordering, cycles."""
 
 import pytest
-
 from ai_os_kernel import GraphNode, PromptGraph
 from ai_os_kernel.prompt_graph import GraphError
 

@@ -10,7 +10,7 @@ production model.
 from __future__ import annotations
 
 import time
-from typing import Iterator, List, Optional
+from collections.abc import Iterator
 
 from ..manifest import ProviderManifest
 from ..provider import (
@@ -24,14 +24,18 @@ from ..provider import (
 class OfflineAdapter(ProviderAdapter):
     name = "offline"
 
-    def __init__(self, manifest: Optional[ProviderManifest] = None):
+    def __init__(self, manifest: ProviderManifest | None = None):
         self.manifest = manifest or ProviderManifest(
-            provider="offline", version="demo", adapter="offline",
+            provider="offline",
+            version="demo",
+            adapter="offline",
             capabilities={"long_context", "json_mode", "streaming"},
-            cost_input_per_1k=0.0, cost_output_per_1k=0.0,
+            cost_input_per_1k=0.0,
+            cost_output_per_1k=0.0,
         )
 
     def capabilities(self) -> ProviderManifest:
+        assert self.manifest is not None
         return self.manifest
 
     def health(self) -> HealthStatus:
@@ -45,14 +49,18 @@ class OfflineAdapter(ProviderAdapter):
             f"Echoing user prompt: {user or '(none)'}"
         )
         return CompletionResponse(
-            text=text, provider=self.name, model="offline-demo",
+            text=text,
+            provider=self.name,
+            model="offline-demo",
             latency_ms=(time.perf_counter() - start) * 1000,
-            prompt_tokens=0, completion_tokens=len(text.split()),
-            cost_usd=0.0, success=True,
+            prompt_tokens=0,
+            completion_tokens=len(text.split()),
+            cost_usd=0.0,
+            success=True,
         )
 
     def stream(self, request: CompletionRequest) -> Iterator[str]:
         text = self.complete(request).text
         # yield word-by-word to emulate streaming
         for i in range(0, len(text), 8):
-            yield text[i:i + 8]
+            yield text[i : i + 8]

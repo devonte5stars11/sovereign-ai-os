@@ -7,11 +7,9 @@ markdown mirror keeps the data human-readable in the knowledge store.
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
 
 
 def _now() -> str:
@@ -46,33 +44,53 @@ class EvaluationStore:
         self._conn = sqlite3.connect(str(self.path))
         self._conn.execute(_SCHEMA)
 
-    def record(self, workflow: str, provider: str, *, graph_version: int = 0,
-               model: str = "", latency_ms: float = 0.0, prompt_tokens: int = 0,
-               completion_tokens: int = 0, cost_usd: float = 0.0,
-               success: bool = True, retries: int = 0) -> int:
+    def record(
+        self,
+        workflow: str,
+        provider: str,
+        *,
+        graph_version: int = 0,
+        model: str = "",
+        latency_ms: float = 0.0,
+        prompt_tokens: int = 0,
+        completion_tokens: int = 0,
+        cost_usd: float = 0.0,
+        success: bool = True,
+        retries: int = 0,
+    ) -> int:
         cur = self._conn.execute(
             """INSERT INTO runs (ts, workflow, graph_version, provider, model,
                latency_ms, prompt_tokens, completion_tokens, cost_usd, success, retries)
                VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
-            (_now(), workflow, graph_version, provider, model, latency_ms,
-             prompt_tokens, completion_tokens, cost_usd, int(success), retries),
+            (
+                _now(),
+                workflow,
+                graph_version,
+                provider,
+                model,
+                latency_ms,
+                prompt_tokens,
+                completion_tokens,
+                cost_usd,
+                int(success),
+                retries,
+            ),
         )
         self._conn.commit()
-        return int(cur.lastrowid)
+        return int(cur.lastrowid or 0)
 
     def rate(self, run_id: int, rating: float) -> None:
-        self._conn.execute("UPDATE runs SET human_rating=? WHERE id=?",
-                           (rating, run_id))
+        self._conn.execute("UPDATE runs SET human_rating=? WHERE id=?", (rating, run_id))
         self._conn.commit()
 
-    def recent(self, limit: int = 20) -> List[Dict]:
+    def recent(self, limit: int = 20) -> list[dict]:
         rows = self._conn.execute(
             "SELECT * FROM runs ORDER BY id DESC LIMIT ?", (limit,)
         ).fetchall()
         cols = [c[0] for c in self._conn.execute("SELECT * FROM runs LIMIT 0").description]
-        return [dict(zip(cols, r)) for r in rows]
+        return [dict(zip(cols, r, strict=False)) for r in rows]
 
-    def summary(self) -> Dict:
+    def summary(self) -> dict:
         row = self._conn.execute(
             """SELECT COUNT(*) AS runs,
                       AVG(latency_ms) AS avg_latency_ms,
@@ -81,12 +99,16 @@ class EvaluationStore:
                       SUM(retries) AS total_retries
                FROM runs"""
         ).fetchone()
-        cols = [c[0] for c in self._conn.execute(
-            "SELECT COUNT(*) AS runs, AVG(latency_ms) AS avg_latency_ms, "
-            "SUM(cost_usd) AS total_cost_usd, "
-            "SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) AS failures, "
-            "SUM(retries) AS total_retries FROM runs LIMIT 0").description]
-        return dict(zip(cols, row or (0, 0, 0, 0, 0)))
+        cols = [
+            c[0]
+            for c in self._conn.execute(
+                "SELECT COUNT(*) AS runs, AVG(latency_ms) AS avg_latency_ms, "
+                "SUM(cost_usd) AS total_cost_usd, "
+                "SUM(CASE WHEN success=0 THEN 1 ELSE 0 END) AS failures, "
+                "SUM(retries) AS total_retries FROM runs LIMIT 0"
+            ).description
+        ]
+        return dict(zip(cols, row or (0, 0, 0, 0, 0), strict=False))
 
     def count(self) -> int:
         return int(self._conn.execute("SELECT COUNT(*) FROM runs").fetchone()[0])
@@ -96,8 +118,12 @@ class EvaluationStore:
         out = Path(path)
         out.parent.mkdir(parents=True, exist_ok=True)
         lines = ["# Evaluation Log\n", ""]
-        lines.append("| id | ts | workflow | provider | latency_ms | cost_usd | ok | retries | rating |")
-        lines.append("|----|----|----------|----------|-----------:|--------:|:--:|-------:|-------:|")
+        lines.append(
+            "| id | ts | workflow | provider | latency_ms | cost_usd | ok | retries | rating |"
+        )
+        lines.append(
+            "|----|----|----------|----------|-----------:|--------:|:--:|-------:|-------:|"
+        )
         for r in self.recent():
             rating = f"{r['human_rating']:.1f}" if r["human_rating"] is not None else "-"
             lines.append(

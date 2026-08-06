@@ -1,7 +1,6 @@
 """Typed artifact registry: provenance, checksums, verification."""
 
 import pytest
-
 from ai_os_kernel import Artifact, ArtifactRegistry
 from ai_os_kernel.artifact_registry import ArtifactError
 
@@ -14,8 +13,7 @@ def test_seal_sets_checksum():
 
 def test_add_and_verify():
     reg = ArtifactRegistry()
-    a = Artifact(type="doc", creator="wf", workflow="w", trust=0.9,
-                 content="the body")
+    a = Artifact(type="doc", creator="wf", workflow="w", trust=0.9, content="the body")
     reg.add(a)
     assert len(reg) == 1
     assert reg.verify(a.artifact_id)
@@ -42,10 +40,24 @@ def test_duplicate_id_rejected():
 
 def test_artifact_metadata_complete():
     a = Artifact(
-        type="video_concept", creator="creative_wf", workflow="wf",
-        graph_version=2, source="spec", trust=0.95, content="", 
+        type="video_concept",
+        creator="creative_wf",
+        workflow="wf",
+        graph_version=2,
+        source="spec",
+        trust=0.95,
+        content="",
     )
     d = a.to_dict()
-    for key in ["artifact_id", "type", "creator", "workflow",
-                "graph_version", "source", "trust", "checksum", "timestamp"]:
+    for key in [
+        "artifact_id",
+        "type",
+        "creator",
+        "workflow",
+        "graph_version",
+        "source",
+        "trust",
+        "checksum",
+        "timestamp",
+    ]:
         assert key in d

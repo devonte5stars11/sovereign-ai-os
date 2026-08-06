@@ -1,6 +1,6 @@
 """Provider adapters. Each adapter implements the ProviderAdapter contract."""
 
-from .offline import OfflineAdapter
 from .gemini import GeminiAdapter
+from .offline import OfflineAdapter
 
-__all__ = ["OfflineAdapter", "GeminiAdapter"]
+__all__ = ["GeminiAdapter", "OfflineAdapter"]

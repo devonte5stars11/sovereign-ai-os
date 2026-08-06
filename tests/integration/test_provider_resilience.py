@@ -1,7 +1,6 @@
 """Provider resilience: rate-limit retry + timeout/network failure."""
 
 import pytest
-
 from ai_os_kernel import CompletionRequest, Message, ProviderError
 
 from .conftest import FakeSession, gemini_completion_body, make_gemini

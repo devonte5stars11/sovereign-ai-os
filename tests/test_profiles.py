@@ -1,15 +1,20 @@
 """SoulVault profiles: loading, selection, and merging."""
 
 import pytest
-
-from ai_os_kernel import ProfileManager
-from ai_os_kernel.profiles import ProfileError, MergedProfile
+from ai_os_kernel.profiles import MergedProfile, ProfileError
 
 
 def test_load_all_souls(profile_manager):
     assert set(profile_manager.names) == {
-        "main", "visionary", "blueprint-genesis", "closer", "intelligence",
-        "orchestrator", "hvac-expert", "cdl-expert", "rainmaker",
+        "main",
+        "visionary",
+        "blueprint-genesis",
+        "closer",
+        "intelligence",
+        "orchestrator",
+        "hvac-expert",
+        "cdl-expert",
+        "rainmaker",
     }
 
 

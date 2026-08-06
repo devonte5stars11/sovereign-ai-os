@@ -1,7 +1,10 @@
 """Full end-to-end pipeline: route -> adapter -> graph -> artifact ->
 Obsidian markdown -> (git) -> reflection -> evaluation."""
 
-from ai_os_kernel import run_pipeline
+import os
+
+import pytest
+from ai_os_kernel import EvaluationStore, build_default_registry, run_pipeline
 
 
 def test_pipeline_runs_end_to_end(offline_registry, tmp_path, monkeypatch):
@@ -27,38 +30,20 @@ def test_pipeline_runs_end_to_end(offline_registry, tmp_path, monkeypatch):
     # Obsidian markdown exists on disk in the output dir
     note = next(out.glob("*.md"))
     assert note.exists()
-    content = note.read_text(encoding="utf-8")
-    assert "[offline-demo]" in content
+    assert "[offline-demo]" in note.read_text(encoding="utf-8")
 
     # evaluation row was recorded
-    from ai_os_kernel import EvaluationStore
-
     store = EvaluationStore(ev)
     assert store.count() >= 1
     store.close()
 
 
-import pytest
-
-from ai_os_kernel import run_pipeline
-
-
 @pytest.mark.live
-def test_pipeline_with_live_key_uses_gemini(monkeypatch, tmp_path):
+def test_pipeline_with_live_key_uses_gemini(tmp_path):
     """Gated: only runs when a real GEMINI_API_KEY is present."""
-    key = None
-    try:
-        import os
-
-        key = os.environ.get("GEMINI_API_KEY")
-    except Exception:
-        key = None
+    key = os.environ.get("GEMINI_API_KEY")
     if not key:
-        import pytest
-
         pytest.skip("GEMINI_API_KEY not set; live adapter test skipped")
-
-    from ai_os_kernel import build_default_registry, run_pipeline
 
     result = run_pipeline(
         "Live pipeline smoke test",

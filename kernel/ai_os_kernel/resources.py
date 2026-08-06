@@ -8,7 +8,7 @@ degrade gracefully when providers change or fail.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -21,7 +21,7 @@ class ResourceBudget:
     max_retries: int = 2
     max_parallel_workers: int = 5
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "time_seconds": self.time_seconds,
             "budget_usd": self.budget_usd,
@@ -31,7 +31,7 @@ class ResourceBudget:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ResourceBudget":
+    def from_dict(cls, data: dict[str, Any]) -> ResourceBudget:
         return cls(
             time_seconds=float(data.get("time_seconds", float("inf"))),
             budget_usd=float(data.get("budget_usd", float("inf"))),
@@ -49,17 +49,17 @@ class RecoveryPolicy:
              -> Ask human.
     """
 
-    fallbacks: List[str] = field(default_factory=list)
+    fallbacks: list[str] = field(default_factory=list)
     ask_human_on_exhaustion: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "fallbacks": list(self.fallbacks),
             "ask_human_on_exhaustion": self.ask_human_on_exhaustion,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "RecoveryPolicy":
+    def from_dict(cls, data: dict[str, Any]) -> RecoveryPolicy:
         return cls(
             fallbacks=list(data.get("fallbacks", [])),
             ask_human_on_exhaustion=bool(data.get("ask_human_on_exhaustion", True)),

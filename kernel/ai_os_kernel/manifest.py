@@ -8,15 +8,15 @@ providers can be added or replaced without changing routing logic.
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Set
 
 try:  # sturdy YAML when available
     import yaml
 
     _HAS_YAML = True
-except Exception:  # pragma: no cover - only reached without PyYAML
+except Exception:  # noqa: BLE001 - pragma: no cover - only reached without PyYAML
     _HAS_YAML = False
 
 
@@ -31,11 +31,11 @@ class ProviderManifest:
     provider: str
     version: str
     adapter: str = ""
-    capabilities: Set[str] = field(default_factory=set)
+    capabilities: set[str] = field(default_factory=set)
     cost_input_per_1k: float = 0.0
     cost_output_per_1k: float = 0.0
-    limits: Dict[str, float] = field(default_factory=dict)
-    properties: Dict[str, object] = field(default_factory=dict)
+    limits: dict[str, float] = field(default_factory=dict)
+    properties: dict[str, object] = field(default_factory=dict)
     source: str = ""
 
     # -- convenience -----------------------------------------------------
@@ -71,12 +71,10 @@ class ProviderManifest:
         }
 
     @classmethod
-    def from_dict(cls, data: dict, source: str = "") -> "ProviderManifest":
+    def from_dict(cls, data: dict, source: str = "") -> ProviderManifest:
         caps = data.get("capabilities", {})
         capabilities = {
-            name
-            for name, enabled in caps.items()
-            if isinstance(enabled, bool) and enabled
+            name for name, enabled in caps.items() if isinstance(enabled, bool) and enabled
         }
         cost = data.get("cost", {}) or {}
         return cls(
@@ -99,7 +97,7 @@ def load_manifest(path: str | os.PathLike) -> ProviderManifest:
         raise ManifestError(f"manifest not found: {p}")
     if not _HAS_YAML:  # pragma: no cover
         raise ManifestError("PyYAML is required to load YAML manifests.")
-    with open(p, "r", encoding="utf-8") as fh:
+    with open(p, encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     if not isinstance(data, dict):
         raise ManifestError(f"manifest must be a mapping: {p}")
@@ -108,7 +106,9 @@ def load_manifest(path: str | os.PathLike) -> ProviderManifest:
     return ProviderManifest.from_dict(data, source=str(p))
 
 
-def load_manifests(paths: Optional[Iterable[str | os.PathLike]] = None) -> List[ProviderManifest]:
+def load_manifests(
+    paths: str | os.PathLike | Iterable[str | os.PathLike] | None = None,
+) -> list[ProviderManifest]:
     """Load several manifests.
 
     ``paths`` may be a directory (glob *.yaml), a single file, or an iterable
@@ -119,8 +119,5 @@ def load_manifests(paths: Optional[Iterable[str | os.PathLike]] = None) -> List[
         paths = sorted((here / "providers").glob("*.yaml"))
     elif isinstance(paths, (str, os.PathLike)):
         p = Path(paths)
-        if p.is_dir():
-            paths = sorted(p.glob("*.yaml"))
-        else:
-            paths = [p]
+        paths = sorted(p.glob("*.yaml")) if p.is_dir() else [p]
     return [load_manifest(p) for p in paths]

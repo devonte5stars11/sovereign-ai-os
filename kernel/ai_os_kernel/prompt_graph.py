@@ -9,7 +9,6 @@ Reflection revises graphs, not ad-hoc prompts.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
 
 
 class GraphError(Exception):
@@ -23,8 +22,8 @@ class GraphNode:
     id: str
     role: str  # e.g. planner, retriever, specialist, verifier, aggregator
     prompt_template: str = ""
-    required_capabilities: List[str] = field(default_factory=list)
-    depends_on: List[str] = field(default_factory=list)
+    required_capabilities: list[str] = field(default_factory=list)
+    depends_on: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -42,9 +41,9 @@ class PromptGraph:
 
     name: str
     version: int = 1
-    nodes: Dict[str, GraphNode] = field(default_factory=dict)
+    nodes: dict[str, GraphNode] = field(default_factory=dict)
 
-    def add_node(self, node: GraphNode) -> "PromptGraph":
+    def add_node(self, node: GraphNode) -> PromptGraph:
         if node.id in self.nodes:
             raise GraphError(f"duplicate node id: {node.id}")
         # Dependencies may be forward references; structural problems are
@@ -52,9 +51,9 @@ class PromptGraph:
         self.nodes[node.id] = node
         return self
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Return structural problems; empty list means the graph is valid."""
-        problems: List[str] = []
+        problems: list[str] = []
         for node in self.nodes.values():
             for dep in node.depends_on:
                 if dep not in self.nodes:
@@ -65,15 +64,15 @@ class PromptGraph:
             problems.append(str(exc))
         return problems
 
-    def order(self) -> List[str]:
+    def order(self) -> list[str]:
         """Topological order of node ids (Kahn's algorithm)."""
         # guard against unknown deps
         for node in self.nodes.values():
             for dep in node.depends_on:
                 if dep not in self.nodes:
                     raise GraphError(f"node '{node.id}' depends on missing '{dep}'")
-        indegree: Dict[str, int] = {n: 0 for n in self.nodes}
-        adj: Dict[str, List[str]] = {n: [] for n in self.nodes}
+        indegree: dict[str, int] = {n: 0 for n in self.nodes}
+        adj: dict[str, list[str]] = {n: [] for n in self.nodes}
         for node in self.nodes.values():
             for dep in node.depends_on:
                 if dep == node.id:
@@ -81,7 +80,7 @@ class PromptGraph:
                 adj[dep].append(node.id)
                 indegree[node.id] += 1
         queue = [n for n, d in indegree.items() if d == 0]
-        order: List[str] = []
+        order: list[str] = []
         while queue:
             n = queue.pop(0)
             order.append(n)

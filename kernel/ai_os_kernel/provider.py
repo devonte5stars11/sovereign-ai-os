@@ -16,15 +16,15 @@ import json
 import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Dict, Iterator, List, Optional, Tuple
 
 from .manifest import ProviderManifest
-
 
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Message:
@@ -34,9 +34,9 @@ class Message:
 
 @dataclass
 class CompletionRequest:
-    messages: List[Message]
-    model: str = ""                 # empty -> adapter default
-    system: str = ""                # optional system prompt
+    messages: list[Message]
+    model: str = ""  # empty -> adapter default
+    system: str = ""  # optional system prompt
     temperature: float = 0.7
     max_tokens: int = 1024
     json_mode: bool = False
@@ -98,12 +98,13 @@ class ProviderError(Exception):
 # Abstract adapter
 # ---------------------------------------------------------------------------
 
+
 class ProviderAdapter(ABC):
     """The single contract every provider adapter implements."""
 
     name: str = ""
     # Static defaults (from providers/*.yaml). Runtime discovery may override.
-    manifest: Optional[ProviderManifest] = None
+    manifest: ProviderManifest | None = None
 
     @abstractmethod
     def capabilities(self) -> ProviderManifest:
@@ -125,7 +126,7 @@ class ProviderAdapter(ABC):
         """Tool/function-calling completion."""
         raise NotImplementedError(f"{self.name} does not implement tool_call yet")
 
-    def embeddings(self, texts: List[str], **kwargs) -> List[List[float]]:
+    def embeddings(self, texts: list[str], **kwargs) -> list[list[float]]:
         """Embed a list of texts."""
         raise NotImplementedError(f"{self.name} does not implement embeddings yet")
 
@@ -134,18 +135,22 @@ class ProviderAdapter(ABC):
 # Transport (stdlib, injectable)
 # ---------------------------------------------------------------------------
 
+
 class HttpClient:
     """Minimal JSON POST/GET client over urllib (no optional deps)."""
 
-    def __init__(self, base_headers: Optional[Dict[str, str]] = None,
-                 timeout: float = 30.0):
+    def __init__(self, base_headers: dict[str, str] | None = None, timeout: float = 30.0):
         self.base_headers = base_headers or {}
         self.timeout = timeout
 
-    def post(self, url: str, json_body: Optional[dict] = None,
-             headers: Optional[Dict[str, str]] = None,
-             timeout: Optional[float] = None,
-             raw_response: bool = False) -> Tuple[int, object]:
+    def post(
+        self,
+        url: str,
+        json_body: dict | None = None,
+        headers: dict[str, str] | None = None,
+        timeout: float | None = None,
+        raw_response: bool = False,
+    ) -> tuple[int, object]:
         """POST and return (status_code, parsed_json | raw bytes)."""
         data = None
         if json_body is not None:
@@ -168,5 +173,5 @@ class HttpClient:
             return code, body
         try:
             return code, json.loads(body.decode("utf-8"))
-        except (ValueError, UnicodeDecodeError) as exc:
+        except (ValueError, UnicodeDecodeError):
             return code, body

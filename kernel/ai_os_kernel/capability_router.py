@@ -8,8 +8,8 @@ releases without any routing-code changes.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List, Optional
 
 from .manifest import ProviderManifest
 
@@ -18,11 +18,11 @@ from .manifest import ProviderManifest
 class TaskSpec:
     """What a task needs, expressed in capability terms."""
 
-    required_capabilities: List[str]
+    required_capabilities: list[str]
     max_budget_usd: float = float("inf")
-    preferred_capabilities: List[str] = None
+    preferred_capabilities: list[str] | None = None
     prefer_local: bool = False
-    exclude: List[str] = None  # provider names to skip
+    exclude: list[str] | None = None  # provider names to skip
 
     def __post_init__(self):
         if self.preferred_capabilities is None:
@@ -35,9 +35,9 @@ class TaskSpec:
 class RouteResult:
     """Outcome of a routing decision."""
 
-    provider: Optional[ProviderManifest]
-    candidates: List[ProviderManifest]
-    rejected: List[ProviderManifest]
+    provider: ProviderManifest | None
+    candidates: list[ProviderManifest]
+    rejected: list[ProviderManifest]
     reason: str = ""
 
     @property
@@ -52,12 +52,12 @@ class CapabilityRouter:
         self._manifests = list(manifests)
 
     @property
-    def manifests(self) -> List[ProviderManifest]:
+    def manifests(self) -> list[ProviderManifest]:
         return list(self._manifests)
 
     def route(self, spec: TaskSpec) -> RouteResult:
-        candidates: List[ProviderManifest] = []
-        rejected: List[ProviderManifest] = []
+        candidates: list[ProviderManifest] = []
+        rejected: list[ProviderManifest] = []
 
         for m in self._manifests:
             if m.provider in spec.exclude:
@@ -76,7 +76,12 @@ class CapabilityRouter:
                 rejected.append(m)
 
         if not candidates:
-            return RouteResult(None, [], rejected, reason="no provider satisfies all required capabilities")
+            return RouteResult(
+                None,
+                [],
+                rejected,
+                reason="no provider satisfies all required capabilities",
+            )
 
         # Rank candidates by cost (cheapest input first, then cheapest output).
         candidates.sort(
@@ -95,7 +100,11 @@ class CapabilityRouter:
         if spec.preferred_capabilities:
             for c in candidates:
                 has = all(c.supports(p) for p in spec.preferred_capabilities)
-                if has and c.estimated_cost_usd(1000, 1000) <= best.estimated_cost_usd(1000, 1000) * 1.5:
+                if (
+                    has
+                    and c.estimated_cost_usd(1000, 1000)
+                    <= best.estimated_cost_usd(1000, 1000) * 1.5
+                ):
                     best = c
                     break
 

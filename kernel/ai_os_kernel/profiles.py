@@ -9,13 +9,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
 
 try:
     import yaml
 
     _HAS_YAML = True
-except Exception:  # pragma: no cover
+except Exception:  # noqa: BLE001 - pragma: no cover
     _HAS_YAML = False
 
 
@@ -29,13 +28,13 @@ class Profile:
     role: str = ""
     domain: str = "general"
     authority: int = 0
-    tool_access: List[str] = field(default_factory=list)
-    prompt_overlays: List[str] = field(default_factory=list)
-    evaluation_rules: Dict[str, object] = field(default_factory=dict)
-    preferred_capabilities: List[str] = field(default_factory=list)
+    tool_access: list[str] = field(default_factory=list)
+    prompt_overlays: list[str] = field(default_factory=list)
+    evaluation_rules: dict[str, object] = field(default_factory=dict)
+    preferred_capabilities: list[str] = field(default_factory=list)
 
     @classmethod
-    def from_dict(cls, name: str, data: dict) -> "Profile":
+    def from_dict(cls, name: str, data: dict) -> Profile:
         return cls(
             name=name,
             role=str(data.get("role", "")),
@@ -52,14 +51,14 @@ class Profile:
 class MergedProfile:
     """The result of merging one or more selected souls."""
 
-    names: List[str]
+    names: list[str]
     role: str
-    domains: List[str]
+    domains: list[str]
     authority: int
-    tool_access: List[str]
-    prompt_overlays: List[str]
-    evaluation_rules: Dict[str, object]
-    preferred_capabilities: List[str]
+    tool_access: list[str]
+    prompt_overlays: list[str]
+    evaluation_rules: dict[str, object]
+    preferred_capabilities: list[str]
 
     def describe(self) -> str:
         return (
@@ -73,15 +72,15 @@ class ProfileManager:
 
     def __init__(self, source: str | Path = "profiles/soulvault.yaml"):
         self.source = Path(source)
-        self._profiles: Dict[str, Profile] = {}
-        self._merge_rules: Dict[str, str] = {}
+        self._profiles: dict[str, Profile] = {}
+        self._merge_rules: dict[str, str] = {}
         if self.source.exists():
             self._load()
 
     def _load(self) -> None:
         if not _HAS_YAML:  # pragma: no cover
             raise ProfileError("PyYAML required to load soulvault.")
-        with open(self.source, "r", encoding="utf-8") as fh:
+        with open(self.source, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
         souls = data.get("souls", {}) or {}
         for name, raw in souls.items():
@@ -89,13 +88,13 @@ class ProfileManager:
         self._merge_rules = data.get("merge_rules", {}) or {}
 
     @property
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         return sorted(self._profiles)
 
     def __contains__(self, name: str) -> bool:
         return name in self._profiles
 
-    def get(self, name: str) -> Optional[Profile]:
+    def get(self, name: str) -> Profile | None:
         return self._profiles.get(name)
 
     def merge(self, *names: str) -> MergedProfile:
@@ -108,7 +107,7 @@ class ProfileManager:
 
         # Merge rules from the vault, defaulting to sensible behavior.
         tool_access = sorted({t for p in selected for t in p.tool_access})
-        overlays: List[str] = []
+        overlays: list[str] = []
         for p in selected:
             for o in p.prompt_overlays:
                 if o not in overlays:
@@ -120,7 +119,7 @@ class ProfileManager:
 
         # Evaluation rules: most specific wins (first non-empty is a proxy);
         # merge dicts shallowly with later profiles overlaying earlier ones.
-        merged_eval: Dict[str, object] = {}
+        merged_eval: dict[str, object] = {}
         for p in selected:
             merged_eval.update(p.evaluation_rules)
 

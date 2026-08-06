@@ -6,8 +6,6 @@ live network or credentials. A separate set of live-gated tests run against the
 real Gemini API when GEMINI_API_KEY is set.
 """
 
-import os
-
 import pytest
 
 
@@ -23,10 +21,15 @@ class FakeSession:
         self.calls = []
 
     def post(self, url, json_body=None, headers=None, timeout=None, raw_response=False):
-        self.calls.append({
-            "url": url, "json_body": json_body, "headers": headers,
-            "timeout": timeout, "raw_response": raw_response,
-        })
+        self.calls.append(
+            {
+                "url": url,
+                "json_body": json_body,
+                "headers": headers,
+                "timeout": timeout,
+                "raw_response": raw_response,
+            }
+        )
         code, data = self.responder(self)
         if raw_response and isinstance(data, (str, bytes)):
             return code, data if isinstance(data, bytes) else data.encode("utf-8")

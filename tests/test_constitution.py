@@ -1,7 +1,6 @@
 """Constitution + policy engine enforcement."""
 
 import pytest
-
 from ai_os_kernel import Constitution, PolicyEngine
 from ai_os_kernel.constitution import PolicyViolation
 

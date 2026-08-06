@@ -41,6 +41,7 @@ def cmd_route(argv: list[str]) -> int:
     for c in result.candidates:
         print(f"  candidate: {c.provider}")
     if result.success:
+        assert result.provider is not None
         print(f"=> routed to: {result.provider.provider}  ({result.reason})")
     else:
         print(f"=> NO ROUTE: {result.reason}")
@@ -71,16 +72,17 @@ def cmd_vertical(argv: list[str]) -> int:
         preferred_capabilities=merged.preferred_capabilities,
         max_budget_usd=0.02,
     )
-    result = router.route(spec)
-    if result.success:
-        print(f"=> routed CDL package build to: {result.provider.provider}")
+    route = router.route(spec)
+    if route.success:
+        assert route.provider is not None
+        print(f"=> routed CDL package build to: {route.provider.provider}")
     else:
-        print(f"=> NO ROUTE: {result.reason}")
+        print(f"=> NO ROUTE: {route.reason}")
         return 1
 
     from .artifact_registry import Artifact, ArtifactRegistry
-    from .workflow_registry import Workflow, WorkflowRegistry
     from .prompt_graph import GraphNode, PromptGraph
+    from .workflow_registry import Workflow, WorkflowRegistry
 
     graph = (
         PromptGraph(name="cdl_package", version=1)
@@ -99,21 +101,20 @@ def cmd_vertical(argv: list[str]) -> int:
     wf.promote()
     print(f"=> workflow '{wf.name}' registered & {wf.status} (order: {graph.order()})")
 
-    artifact = (
-        Artifact(
-            type="offer_package",
-            creator="cdl_package_build",
-            workflow=wf.name,
-            graph_version=graph.version,
-            source="internal synthesis",
-            trust=0.9,
-            content="CDL AI Automation Retainer — proposal outline (simulated).",
-        )
-        .seal()
-    )
+    artifact = Artifact(
+        type="offer_package",
+        creator="cdl_package_build",
+        workflow=wf.name,
+        graph_version=graph.version,
+        source="internal synthesis",
+        trust=0.9,
+        content="CDL AI Automation Retainer — proposal outline (simulated).",
+    ).seal()
     art_reg = ArtifactRegistry()
     art_reg.add(artifact)
-    print(f"=> artifact {artifact.artifact_id[:8]}… sealed; verifies={art_reg.verify(artifact.artifact_id)}")
+    print(
+        f"=> artifact {artifact.artifact_id[:8]}… sealed; verifies={art_reg.verify(artifact.artifact_id)}"
+    )
     return 0
 
 
@@ -126,9 +127,13 @@ def cmd_adapters(argv: list[str]) -> int:
     reg.register(GeminiAdapter())  # always show; health reports key presence
     cap = CapabilityRegistry(reg.all(), ttl_seconds=0)
     for m in cap.refresh():
-        h = reg.get(m.provider).health()
-        print(f"{m.provider:<10} ok={str(h.ok):<5} latency={h.latency_ms:.1f}ms "
-              f"caps={len(m.capabilities)}")
+        adapter = reg.get(m.provider)
+        assert adapter is not None
+        h = adapter.health()
+        print(
+            f"{m.provider:<10} ok={h.ok!s:<5} latency={h.latency_ms:.1f}ms "
+            f"caps={len(m.capabilities)}"
+        )
         if not h.ok and h.error:
             print(f"           health: {h.error}")
     return 0
@@ -141,14 +146,18 @@ def cmd_chat(argv: list[str]) -> int:
     prompt = " ".join(argv) or "Say hello."
     reg = build_default_registry()
     adapter = reg.all()[0]
-    print(f"provider: {adapter.name} (mode={'live' if 'GEMINI_API_KEY' in __import__('os').environ else 'offline'})")
+    print(
+        f"provider: {adapter.name} (mode={'live' if 'GEMINI_API_KEY' in __import__('os').environ else 'offline'})"
+    )
     resp = adapter.complete(CompletionRequest(messages=[Message("user", prompt)]))
     if not resp.success:
         print(f"ERROR: {resp.error}")
         return 1
     print(resp.text)
-    print(f"\n[latency={resp.latency_ms:.0f}ms cost=${resp.cost_usd:.5f} "
-          f"tokens={resp.prompt_tokens}/{resp.completion_tokens}]")
+    print(
+        f"\n[latency={resp.latency_ms:.0f}ms cost=${resp.cost_usd:.5f} "
+        f"tokens={resp.prompt_tokens}/{resp.completion_tokens}]"
+    )
     return 0
 
 
@@ -172,9 +181,11 @@ def cmd_eval(argv: list[str]) -> int:
     print("summary:", store.summary())
     print("recent runs:")
     for r in store.recent(10):
-        print(f"  #{r['id']} {r['workflow']:<16} {r['provider']:<8} "
-              f"{r['latency_ms']:.0f}ms ${r['cost_usd']:.5f} "
-              f"ok={bool(r['success'])} retries={r['retries']}")
+        print(
+            f"  #{r['id']} {r['workflow']:<16} {r['provider']:<8} "
+            f"{r['latency_ms']:.0f}ms ${r['cost_usd']:.5f} "
+            f"ok={bool(r['success'])} retries={r['retries']}"
+        )
     store.close()
     return 0
 

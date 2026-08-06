@@ -11,8 +11,6 @@ import hashlib
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from pathlib import Path
-from typing import Dict, Optional
 
 
 class ArtifactError(Exception):
@@ -41,7 +39,7 @@ class Artifact:
     def compute_checksum(self) -> str:
         return hashlib.sha256(self.content.encode("utf-8")).hexdigest()
 
-    def seal(self) -> "Artifact":
+    def seal(self) -> Artifact:
         """Stamp the checksum so the artifact is immutable/verifiable."""
         self.checksum = self.compute_checksum()
         return self
@@ -68,7 +66,7 @@ class ArtifactRegistry:
     """Stores and verifies artifacts, keyed by stable artifact_id."""
 
     def __init__(self) -> None:
-        self._store: Dict[str, Artifact] = {}
+        self._store: dict[str, Artifact] = {}
 
     def add(self, artifact: Artifact) -> Artifact:
         if artifact.artifact_id in self._store:
@@ -77,7 +75,7 @@ class ArtifactRegistry:
         self._store[artifact.artifact_id] = artifact
         return artifact
 
-    def get(self, artifact_id: str) -> Optional[Artifact]:
+    def get(self, artifact_id: str) -> Artifact | None:
         return self._store.get(artifact_id)
 
     def verify(self, artifact_id: str) -> bool:
@@ -87,5 +85,5 @@ class ArtifactRegistry:
     def __len__(self) -> int:
         return len(self._store)
 
-    def items(self) -> Dict[str, Artifact]:
+    def items(self) -> dict[str, Artifact]:
         return dict(self._store)

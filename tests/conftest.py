@@ -11,6 +11,7 @@ KERNEL_DIR = REPO_ROOT / "kernel"
 if str(KERNEL_DIR) not in sys.path:
     sys.path.insert(0, str(KERNEL_DIR))
 
+
 # Expose a stable repo-root path to every test module.
 @pytest.fixture
 def repo_root() -> Path:

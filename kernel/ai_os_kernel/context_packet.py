@@ -7,7 +7,7 @@ prompts and improves interoperability across workflows and providers.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 @dataclass
@@ -19,16 +19,16 @@ class ContextPacket:
     """
 
     task: str
-    goals: List[str] = field(default_factory=list)
-    constraints: List[str] = field(default_factory=list)
-    relevant_memory: List[str] = field(default_factory=list)
-    artifacts: List[Dict[str, Any]] = field(default_factory=list)
-    policies: List[str] = field(default_factory=list)
-    budget: Dict[str, Any] = field(default_factory=dict)
+    goals: list[str] = field(default_factory=list)
+    constraints: list[str] = field(default_factory=list)
+    relevant_memory: list[str] = field(default_factory=list)
+    artifacts: list[dict[str, Any]] = field(default_factory=list)
+    policies: list[str] = field(default_factory=list)
+    budget: dict[str, Any] = field(default_factory=dict)
     expected_output: str = ""
-    context: Dict[str, Any] = field(default_factory=dict)  # freeform extras
+    context: dict[str, Any] = field(default_factory=dict)  # freeform extras
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "task": self.task,
             "goals": list(self.goals),
@@ -42,7 +42,7 @@ class ContextPacket:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ContextPacket":
+    def from_dict(cls, data: dict[str, Any]) -> ContextPacket:
         return cls(
             task=data.get("task", ""),
             goals=list(data.get("goals", [])),
@@ -55,7 +55,7 @@ class ContextPacket:
             context=data.get("context", {}) or {},
         )
 
-    def validate(self) -> List[str]:
+    def validate(self) -> list[str]:
         """Return a list of missing-field problems (empty == valid)."""
         problems = []
         if not self.task:

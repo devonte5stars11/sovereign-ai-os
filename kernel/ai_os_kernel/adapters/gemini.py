@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 import time
-from typing import Dict, Iterator, List, Optional, Tuple
+from collections.abc import Iterator
 
 from ..manifest import ProviderManifest, load_manifest
 from ..provider import (
@@ -30,10 +30,10 @@ class GeminiAdapter(ProviderAdapter):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = DEFAULT_MODEL,
         session=None,
-        manifest: Optional[ProviderManifest] = None,
+        manifest: ProviderManifest | None = None,
     ):
         self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
         self.model = model
@@ -46,15 +46,26 @@ class GeminiAdapter(ProviderAdapter):
         path = os.path.join(here, "providers", "gemini.yaml")
         try:
             return load_manifest(path)
-        except Exception:
+        except Exception:  # noqa: BLE001 - manifest is optional; fall back to defaults
             return ProviderManifest(
-                provider="gemini", version="2.5", adapter="gemini",
-                capabilities={"long_context", "vision", "json_mode", "tool_calling",
-                              "streaming", "code_execution", "file_editing"},
-                cost_input_per_1k=0.000002, cost_output_per_1k=0.000008,
+                provider="gemini",
+                version="2.5",
+                adapter="gemini",
+                capabilities={
+                    "long_context",
+                    "vision",
+                    "json_mode",
+                    "tool_calling",
+                    "streaming",
+                    "code_execution",
+                    "file_editing",
+                },
+                cost_input_per_1k=0.000002,
+                cost_output_per_1k=0.000008,
             )
 
     def capabilities(self) -> ProviderManifest:
+        assert self.manifest is not None
         return self.manifest
 
     # -- helpers ----------------------------------------------------------
@@ -77,20 +88,20 @@ class GeminiAdapter(ProviderAdapter):
     # -- completion -------------------------------------------------------
     def complete(self, request: CompletionRequest) -> CompletionResponse:
         if not self.api_key:
-            raise ProviderError(f"{self.name}: no GEMINI_API_KEY configured (set it to go live, or use the OfflineAdapter)")
+            raise ProviderError(
+                f"{self.name}: no GEMINI_API_KEY configured (set it to go live, or use the OfflineAdapter)"
+            )
         body = self._build_body(request, stream=False)
         url = f"{GEMINI_BASE}/models/{self.model}:generateContent{self._auth_params()}"
-        last_error: Optional[str] = None
+        last_error: str | None = None
         for attempt in range(request.max_retries + 1):
             start = time.perf_counter()
             try:
-                code, data = self.session.post(
-                    url, json_body=body, timeout=request.timeout_seconds
-                )
+                code, data = self.session.post(url, json_body=body, timeout=request.timeout_seconds)
                 latency = (time.perf_counter() - start) * 1000
                 if code == 429:
                     # rate-limited -> backoff and retry
-                    time.sleep(0.5 * (2 ** attempt))
+                    time.sleep(0.5 * (2**attempt))
                     last_error = f"rate limited (HTTP 429) attempt {attempt + 1}"
                     continue
                 if code != 200:
@@ -98,9 +109,9 @@ class GeminiAdapter(ProviderAdapter):
                 return self._parse_completion(data, latency)
             except ProviderError:
                 raise
-            except Exception as exc:  # transport-level retryable
+            except Exception as exc:  # noqa: BLE001 - transport-level retryable
                 last_error = str(exc)
-                time.sleep(0.5 * (2 ** attempt))
+                time.sleep(0.5 * (2**attempt))
         raise ProviderError(f"{self.name}: failed after retries: {last_error}")
 
     # -- streaming --------------------------------------------------------
@@ -132,8 +143,12 @@ class GeminiAdapter(ProviderAdapter):
         for m in request.messages:
             if m.role == "system":
                 continue
-            contents.append({"role": "user" if m.role != "assistant" else "model",
-                             "parts": [{"text": m.content}]})
+            contents.append(
+                {
+                    "role": "user" if m.role != "assistant" else "model",
+                    "parts": [{"text": m.content}],
+                }
+            )
         body: dict = {
             "contents": contents,
             "generationConfig": {
@@ -148,7 +163,7 @@ class GeminiAdapter(ProviderAdapter):
     def _parse_completion(self, data, latency_ms: float) -> CompletionResponse:
         if isinstance(data, (bytes, str)):
             raise ProviderError(f"{self.name}: non-JSON response: {str(data)[:200]}")
-        candidates = (data.get("candidates") or [{}])
+        candidates = data.get("candidates") or [{}]
         parts = (candidates[0].get("content", {}).get("parts") or [{}]) if candidates else [{}]
         text = "".join(p.get("text", "") for p in parts)
         usage = data.get("usageMetadata") or {}
@@ -156,9 +171,15 @@ class GeminiAdapter(ProviderAdapter):
         completion_tokens = int(usage.get("candidatesTokenCount", 0) or 0)
         cost = self._cost(prompt_tokens, completion_tokens)
         return CompletionResponse(
-            text=text, provider=self.name, model=self.model, latency_ms=latency_ms,
-            prompt_tokens=prompt_tokens, completion_tokens=completion_tokens,
-            cost_usd=cost, success=True, raw=data,
+            text=text,
+            provider=self.name,
+            model=self.model,
+            latency_ms=latency_ms,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            cost_usd=cost,
+            success=True,
+            raw=data,
         )
 
     def _delta_from_event(self, payload: str) -> str:
@@ -168,7 +189,7 @@ class GeminiAdapter(ProviderAdapter):
             evt = json.loads(payload)
         except ValueError:
             return ""
-        parts = ((evt.get("candidates") or [{}])[0].get("content", {}).get("parts") or [{}])
+        parts = (evt.get("candidates") or [{}])[0].get("content", {}).get("parts") or [{}]
         return "".join(p.get("text", "") for p in parts)
 
     def _error_from(self, data) -> str:
@@ -179,6 +200,7 @@ class GeminiAdapter(ProviderAdapter):
 
     def _cost(self, prompt_tokens: int, completion_tokens: int) -> float:
         m = self.manifest
+        assert m is not None
         return (prompt_tokens / 1000.0 * m.cost_input_per_1k) + (
             completion_tokens / 1000.0 * m.cost_output_per_1k
         )

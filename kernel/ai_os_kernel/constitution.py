@@ -8,8 +8,7 @@ or externally-reaching actions.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, List
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -23,7 +22,11 @@ PRINCIPLES = [
     Principle(1, "truthfulness", "Truth over speculation; distinguish fact from inference."),
     Principle(2, "preserve_canonical_knowledge", "Store of truth is Markdown/Git/Obsidian."),
     Principle(3, "minimize_cost", "Cheapest capable path; escalate on demonstrated need."),
-    Principle(4, "require_approval_for_destructive", "Approval for deletes and irrecoverable changes."),
+    Principle(
+        4,
+        "require_approval_for_destructive",
+        "Approval for deletes and irrecoverable changes.",
+    ),
     Principle(5, "cite_provenance", "Record source, workflow, and graph version."),
     Principle(6, "prefer_reusable_artifacts", "Favor typed, versioned, reusable outputs."),
     Principle(7, "vendor_independence", "No knowledge trapped in one provider."),
@@ -33,7 +36,7 @@ PRINCIPLES = [
 class Constitution:
     """The version-controlled root policy."""
 
-    def __init__(self, principles: List[Principle] = None):
+    def __init__(self, principles: list[Principle] | None = None):
         self.principles = principles or PRINCIPLES
 
     def __iter__(self):
@@ -51,19 +54,22 @@ class PolicyViolation(Exception):
 class PolicyEngine:
     """Enforces the constitution on proposed actions."""
 
-    def __init__(self, constitution: Constitution = None, require_approval: bool = True):
+    def __init__(self, constitution: Constitution | None = None, require_approval: bool = True):
         self.constitution = constitution or Constitution()
         self.require_approval = require_approval
-        self._violations: List[str] = []
+        self._violations: list[str] = []
 
     @property
-    def violations(self) -> List[str]:
+    def violations(self) -> list[str]:
         return list(self._violations)
 
     def check_cost(self, estimated_usd: float, budget_usd: float) -> None:
         """Principle 3: respect the resource budget."""
         if estimated_usd > budget_usd:
-            raise PolicyViolation(3, f"estimated cost ${estimated_usd:.4f} exceeds budget ${budget_usd:.4f}")
+            raise PolicyViolation(
+                3,
+                f"estimated cost ${estimated_usd:.4f} exceeds budget ${budget_usd:.4f}",
+            )
 
     def check_source_provided(self, has_source: bool) -> None:
         """Principle 5: cite provenance."""
@@ -76,7 +82,9 @@ class PolicyEngine:
             raise PolicyViolation(4, f"approval required for action: {action}")
 
     # -- run-mode -------------------------------------------------------
-    def run_thresholds(self, workflow_name: str, estimated_usd: float, budget_usd: float) -> List[str]:
+    def run_thresholds(
+        self, workflow_name: str, estimated_usd: float, budget_usd: float
+    ) -> list[str]:
         """Non-raising check; returns human-readable problems."""
         self._violations = []
         if estimated_usd > budget_usd:

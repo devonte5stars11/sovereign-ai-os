@@ -20,13 +20,11 @@ from __future__ import annotations
 import os
 import subprocess
 from pathlib import Path
-from typing import List, Optional
 
 from .adapters import GeminiAdapter, OfflineAdapter
 from .artifact_registry import Artifact, ArtifactRegistry
 from .capability_registry import AdapterRegistry, CapabilityRegistry
 from .capability_router import CapabilityRouter, TaskSpec
-from .constitution import PolicyEngine
 from .context_packet import ContextPacket
 from .evaluation_store import EvaluationStore
 from .profiles import ProfileManager
@@ -53,14 +51,13 @@ def _slugify(text: str) -> str:
 
 
 def _git(repo: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(repo), *args], check=True,
-                   capture_output=True, text=True)
+    subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True)
 
 
 def run_pipeline(
     task: str,
-    souls: Optional[List[str]] = None,
-    registry: Optional[AdapterRegistry] = None,
+    souls: list[str] | None = None,
+    registry: AdapterRegistry | None = None,
     output_dir: str | Path = "knowledge/output",
     eval_path: str | Path = "evaluation/eval.sqlite3",
     auto_git: bool = True,
@@ -88,6 +85,7 @@ def run_pipeline(
     route = router.route(spec)
     if not route.success:
         raise RuntimeError(f"no route for task: {route.reason}")
+    assert route.provider is not None
     adapter = registry.get(route.provider.provider)
     if adapter is None:
         raise RuntimeError(f"routed to missing adapter: {route.provider.provider}")
@@ -96,15 +94,38 @@ def run_pipeline(
     graph = (
         PromptGraph(name="sovereign_note", version=1)
         .add_node(GraphNode("planner", "planner", "interpret the task"))
-        .add_node(GraphNode("writer", "specialist", "draft with selected souls",
-                            required_capabilities=["long_context"], depends_on=["planner"]))
-        .add_node(GraphNode("verifier", "verifier", "check quality + provenance",
-                            depends_on=["writer"]))
-        .add_node(GraphNode("aggregator", "aggregator", "final markdown note",
-                            depends_on=["verifier"]))
+        .add_node(
+            GraphNode(
+                "writer",
+                "specialist",
+                "draft with selected souls",
+                required_capabilities=["long_context"],
+                depends_on=["planner"],
+            )
+        )
+        .add_node(
+            GraphNode(
+                "verifier",
+                "verifier",
+                "check quality + provenance",
+                depends_on=["writer"],
+            )
+        )
+        .add_node(
+            GraphNode(
+                "aggregator",
+                "aggregator",
+                "final markdown note",
+                depends_on=["verifier"],
+            )
+        )
     )
     graph_order = graph.order()
+    # Register the workflow so the run is part of the versioned registry.
     wf = Workflow(name="sovereign_note", graph=graph, approval_required=False)
+    wf_registry = WorkflowRegistry()
+    wf_registry.register(wf)
+    wf.promote()
 
     # ---- 4. Provider execution ------------------------------------------
     packet = ContextPacket(
@@ -123,26 +144,36 @@ def run_pipeline(
 
     # ---- 5. Artifact registry (checksummed) -----------------------------
     art_reg = ArtifactRegistry()
-    artifact = (
-        Artifact(type="note", creator="sovereign_note", workflow="sovereign_note",
-                 graph_version=graph.version, source=resp.provider, trust=0.9,
-                 content=resp.text)
-        .seal()
-    )
+    artifact = Artifact(
+        type="note",
+        creator="sovereign_note",
+        workflow="sovereign_note",
+        graph_version=graph.version,
+        source=resp.provider,
+        trust=0.9,
+        content=resp.text,
+    ).seal()
     art_reg.add(artifact)
 
     # ---- 6. Obsidian markdown -------------------------------------------
     slug = _slugify(task)
     md_path = output_dir / f"{slug}.md"
     md_path.parent.mkdir(parents=True, exist_ok=True)
-    md_path.write_text(_render_note(md_path, task, resp, artifact, merged, profile_desc),
-                       encoding="utf-8")
+    md_path.write_text(
+        _render_note(md_path, task, resp, artifact, merged, profile_desc),
+        encoding="utf-8",
+    )
 
     # ---- 7. Git commit ---------------------------------------------------
     if auto_git:
         _git(root, "add", "-A")
-        _git(root, "commit", "-q", "-m",
-             f"pipeline: add {slug}.md (workflow=sovereign_note v{graph.version}) {artifact.artifact_id[:8]}")
+        _git(
+            root,
+            "commit",
+            "-q",
+            "-m",
+            f"pipeline: add {slug}.md (workflow=sovereign_note v{graph.version}) {artifact.artifact_id[:8]}",
+        )
 
     # ---- 8. Reflection ---------------------------------------------------
     reflection_path = root / "memory" / "reflections.md"
@@ -160,10 +191,16 @@ def run_pipeline(
     # ---- 9. Evaluation log ----------------------------------------------
     store = EvaluationStore(root / eval_path)
     run_id = store.record(
-        workflow="sovereign_note", provider=resp.provider, model=resp.model,
-        graph_version=graph.version, latency_ms=resp.latency_ms,
-        prompt_tokens=resp.prompt_tokens, completion_tokens=resp.completion_tokens,
-        cost_usd=resp.cost_usd, success=True, retries=0,
+        workflow="sovereign_note",
+        provider=resp.provider,
+        model=resp.model,
+        graph_version=graph.version,
+        latency_ms=resp.latency_ms,
+        prompt_tokens=resp.prompt_tokens,
+        completion_tokens=resp.completion_tokens,
+        cost_usd=resp.cost_usd,
+        success=True,
+        retries=0,
     )
     store.export_markdown(Path(eval_path).parent / "log.md")
     store.close()
@@ -221,4 +258,5 @@ def _render_note(md_path: Path, task: str, resp, artifact, merged, profile_desc:
 
 def _now_str() -> str:
     from datetime import datetime, timezone
+
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")

@@ -5,11 +5,10 @@ here with a fake HTTP session — no network, no credentials.
 """
 
 import pytest
-
 from ai_os_kernel import CompletionRequest, Message, ProviderError
 from ai_os_kernel.adapters.gemini import GeminiAdapter
 
-from .conftest import FakeSession, gemini_completion_body
+from .conftest import FakeSession, gemini_completion_body, make_gemini
 
 
 def test_complete_parses_response():
@@ -21,7 +20,7 @@ def test_complete_parses_response():
     assert resp.prompt_tokens == 10
     assert resp.completion_tokens == 25
     # cost = 10/1000*in + 25/1000*out
-    assert resp.cost_usd == pytest.approx(10/1000*0.000002 + 25/1000*0.000008)
+    assert resp.cost_usd == pytest.approx(10 / 1000 * 0.000002 + 25 / 1000 * 0.000008)
 
 
 def test_complete_sends_expected_url_and_body():
@@ -51,7 +50,6 @@ def test_http_error_raises_provider_error():
 
 
 def test_missing_key_raises():
-    from ai_os_kernel.adapters.gemini import GeminiAdapter
 
     adapter = GeminiAdapter(api_key="", session=FakeSession())
     with pytest.raises(ProviderError):
@@ -65,7 +63,6 @@ def test_health_with_key_and_ok():
 
 
 def test_health_no_key_not_ok():
-    from ai_os_kernel.adapters.gemini import GeminiAdapter
 
     adapter = GeminiAdapter(api_key="", session=FakeSession())
     assert adapter.health().ok is False
@@ -78,7 +75,3 @@ def test_stream_yields_deltas():
     adapter = make_gemini(session)
     deltas = list(adapter.stream(CompletionRequest(messages=[Message("user", "x")])))
     assert "".join(deltas) == "Hello Gemini"
-
-
-# Import helper defined above module-level for clarity.
-from .conftest import make_gemini  # noqa: E402

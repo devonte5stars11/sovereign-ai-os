@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
 
 from .prompt_graph import PromptGraph
 from .resources import RecoveryPolicy, ResourceBudget
@@ -35,7 +34,7 @@ class Workflow:
     approval_required: bool = False
     created_at: str = field(default_factory=_now)
     version: int = 1
-    metrics: Dict[str, float] = field(default_factory=dict)
+    metrics: dict[str, float] = field(default_factory=dict)
 
     def promote(self) -> None:
         if self.status == "draft":
@@ -56,7 +55,7 @@ class WorkflowRegistry:
     """Stores and manages workflows by name."""
 
     def __init__(self) -> None:
-        self._workflows: Dict[str, Workflow] = {}
+        self._workflows: dict[str, Workflow] = {}
 
     def register(self, workflow: Workflow) -> None:
         if workflow.graph.validate():
@@ -67,18 +66,18 @@ class WorkflowRegistry:
             raise WorkflowError(f"workflow already registered: {workflow.name}")
         self._workflows[workflow.name] = workflow
 
-    def get(self, name: str) -> Optional[Workflow]:
+    def get(self, name: str) -> Workflow | None:
         return self._workflows.get(name)
 
     def __contains__(self, name: str) -> bool:
         return name in self._workflows
 
     @property
-    def names(self) -> List[str]:
+    def names(self) -> list[str]:
         return sorted(self._workflows)
 
-    def promoted(self) -> List[Workflow]:
+    def promoted(self) -> list[Workflow]:
         return [w for w in self._workflows.values() if w.status == "promoted"]
 
-    def by_status(self, status: str) -> List[Workflow]:
+    def by_status(self, status: str) -> list[Workflow]:
         return [w for w in self._workflows.values() if w.status == status]

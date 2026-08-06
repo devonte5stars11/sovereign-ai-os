@@ -36,6 +36,13 @@ def test_to_dict_shape():
     p = ContextPacket(task="t", expected_output="out")
     d = p.to_dict()
     assert set(d) == {
-        "task", "goals", "constraints", "relevant_memory", "artifacts",
-        "policies", "budget", "expected_output", "context",
+        "task",
+        "goals",
+        "constraints",
+        "relevant_memory",
+        "artifacts",
+        "policies",
+        "budget",
+        "expected_output",
+        "context",
     }

@@ -5,10 +5,23 @@ import yaml
 
 def test_repo_layout_exists(repo_root):
     expected_dirs = [
-        "00-core", "souls", "specs", "memory", "providers", "profiles",
-        "graphs", "graph-registry", "kernel", "tests", "docs/adr",
-        "knowledge", "artifact-registry", "evaluation", "operations",
-        "plugins", "capabilities",
+        "00-core",
+        "souls",
+        "specs",
+        "memory",
+        "providers",
+        "profiles",
+        "graphs",
+        "graph-registry",
+        "kernel",
+        "tests",
+        "docs/adr",
+        "knowledge",
+        "artifact-registry",
+        "evaluation",
+        "operations",
+        "plugins",
+        "capabilities",
     ]
     for d in expected_dirs:
         assert (repo_root / d).is_dir(), f"missing directory: {d}"
@@ -16,8 +29,15 @@ def test_repo_layout_exists(repo_root):
 
 def test_all_nine_souls_present(soul_names):
     assert set(soul_names) == {
-        "main", "visionary", "blueprint-genesis", "closer", "intelligence",
-        "orchestrator", "hvac-expert", "cdl-expert", "rainmaker",
+        "main",
+        "visionary",
+        "blueprint-genesis",
+        "closer",
+        "intelligence",
+        "orchestrator",
+        "hvac-expert",
+        "cdl-expert",
+        "rainmaker",
     }
 
 
@@ -27,7 +47,14 @@ def test_specstack_present(repo_root):
 
 
 def test_core_files_present(repo_root):
-    for f in ["SOUL.md", "META.md", "design.md", "principles.md", "constitution.md", "maturity-model.md"]:
+    for f in [
+        "SOUL.md",
+        "META.md",
+        "design.md",
+        "principles.md",
+        "constitution.md",
+        "maturity-model.md",
+    ]:
         assert (repo_root / "00-core" / f).is_file(), f"missing core file: {f}"
 
 

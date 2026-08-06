@@ -43,9 +43,7 @@ def test_route_impossible(manifests):
 
 def test_route_respects_exclusions(manifests):
     router = CapabilityRouter(manifests)
-    res = router.route(
-        TaskSpec(required_capabilities=["long_context"], exclude=["gemini"])
-    )
+    res = router.route(TaskSpec(required_capabilities=["long_context"], exclude=["gemini"]))
     assert res.success and res.provider.provider != "gemini"
 
 
