@@ -1,0 +1,11 @@
+# Normalize line endings to LF in the repo (checkout keeps native).
+* text=auto eol=lf
+
+# Binary files must not be mangled.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.mp4 binary
+*.pdf binary
+*.pyc binary

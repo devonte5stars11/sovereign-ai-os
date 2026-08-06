@@ -1,0 +1,32 @@
+# Provider Capability Manifest — grok (xAI)
+
+provider: grok
+version: "3.x"
+adapter: provider_adapters.xai
+
+capabilities:
+  long_context: true
+  vision: true
+  image_generation: false
+  browser: true
+  computer_use: false
+  audio: false
+  code_execution: true
+  json_mode: true
+  tool_calling: true
+  streaming: true
+  file_editing: true
+  local: false
+
+cost:
+  input: 0.000003
+  output: 0.000015
+
+limits:
+  context_tokens: 131072
+  rate_limit_rpm: 100
+  max_output_tokens: 32768
+
+properties:
+  latency_profile: medium
+  reliability: high

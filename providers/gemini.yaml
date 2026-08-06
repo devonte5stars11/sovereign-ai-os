@@ -1,0 +1,33 @@
+# Provider Capability Manifest — gemini
+# Machine-readable so the router can choose providers by capability + cost.
+
+provider: gemini
+version: "2.5"
+adapter: provider_adapters.gemini
+
+capabilities:
+  long_context: true
+  vision: true
+  image_generation: true
+  browser: false
+  computer_use: false
+  audio: true
+  code_execution: true
+  json_mode: true
+  tool_calling: true
+  streaming: true
+  file_editing: true
+  local: false
+
+cost:
+  input: 0.000002        # $/1k input tokens (representative)
+  output: 0.000008       # $/1k output tokens (representative)
+
+limits:
+  context_tokens: 1000000
+  rate_limit_rpm: 200
+  max_output_tokens: 8000
+
+properties:
+  latency_profile: medium
+  reliability: high

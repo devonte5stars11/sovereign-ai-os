@@ -1,0 +1,32 @@
+# Provider Capability Manifest — gpt (OpenAI)
+
+provider: gpt
+version: "4.x"
+adapter: provider_adapters.openai
+
+capabilities:
+  long_context: true
+  vision: true
+  image_generation: true
+  browser: false
+  computer_use: true
+  audio: true
+  code_execution: true
+  json_mode: true
+  tool_calling: true
+  streaming: true
+  file_editing: true
+  local: false
+
+cost:
+  input: 0.0000025
+  output: 0.000010
+
+limits:
+  context_tokens: 200000
+  rate_limit_rpm: 500
+  max_output_tokens: 16384
+
+properties:
+  latency_profile: medium
+  reliability: very_high

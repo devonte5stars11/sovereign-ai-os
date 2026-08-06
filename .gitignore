@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Runtime / secrets
+.env
+*.env
+.env.*
+secrets/
+credentials/
+*.pem
+*.key
+
+# Local knowledge that should NOT be committed (client sandboxes, private artifacts)
+knowledge/private/
+artifact-registry/private/
+memory/working/
+
+# Build output
+dist/
+build/
+node_modules/
+.next/
+out/

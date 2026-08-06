@@ -1,0 +1,22 @@
+# Capability Catalog — the canonical list of capabilities the kernel understands.
+# Providers declare which of these they support in their manifest.
+# The router never references model names directly; it reasons in these terms.
+
+capabilities:
+  # ---- language ----
+  long_context:      "Handles large context windows (>=100k tokens) well."
+  code_execution:    "Can run / reason about code execution."
+  json_mode:         "Can produce strictly structured JSON output."
+  tool_calling:      "Can call external tools/functions reliably."
+  streaming:         "Supports token streaming."
+  vision:            "Can ingest and reason over images."
+  audio:             "Can ingest/transcribe audio input."
+  browser:           "Can autonomously drive a web browser."
+  computer_use:      "Can operate a desktop/computer like a human."
+  file_editing:      "Can read/write/edit files."
+  # ---- generation ----
+  image_generation:  "Can generate images."
+  video_generation:  "Can generate video."
+  speech_generation: "Can synthesize speech."
+  # ---- deployment ----
+  local:             "Runs locally / on-prem (data stays on-device)."

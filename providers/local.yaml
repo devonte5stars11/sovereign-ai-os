@@ -1,0 +1,33 @@
+# Provider Capability Manifest — local (on-device / private)
+
+provider: local
+version: "ollama"
+adapter: provider_adapters.local
+
+capabilities:
+  long_context: false
+  vision: false
+  image_generation: false
+  browser: false
+  computer_use: false
+  audio: false
+  code_execution: false
+  json_mode: true
+  tool_calling: false
+  streaming: true
+  file_editing: false
+  local: true
+
+cost:
+  input: 0.0            # on-device
+  output: 0.0           # on-device
+
+limits:
+  context_tokens: 32768
+  rate_limit_rpm: 60
+  max_output_tokens: 4096
+
+properties:
+  latency_profile: low
+  reliability: medium
+  privacy: maximum      # data never leaves the machine

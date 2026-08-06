@@ -1,0 +1,92 @@
+# SoulVault — Data-Driven Composable Profiles
+# The user-facing "souls" (../souls/*.md) are the ergonomic, human-readable layer.
+# This file is the machine-readable implementation: each soul is a composable profile.
+# Multiple profiles merge cleanly (e.g. main + cdl_expert + closer + visionary).
+
+schema_version: 1.0
+default_soul: main
+
+souls:
+  main:
+    role: coordinator
+    domain: general
+    authority: 10
+    tool_access: [planner, router, memory, execution, monitoring]
+    prompt_overlays: [souls/main.md]
+    evaluation_rules: {strictness: medium, require_approval: false}
+
+  visionary:
+    role: creative_director
+    domain: marketing
+    authority: 6
+    tool_access: [creative-studio, specstack]
+    prompt_overlays: [souls/visionary.md]
+    evaluation_rules: {strictness: high, dimensions: [taste, specstack_compliance]}
+    preferred_capabilities: [image_generation, video_generation, vision]
+
+  blueprint-genesis:
+    role: strategist
+    domain: general
+    authority: 8
+    tool_access: [planner, knowledge, graphs]
+    prompt_overlays: [souls/blueprint-genesis.md]
+    evaluation_rules: {strictness: high, dimensions: [structure, first_principles]}
+
+  closer:
+    role: sales
+    domain: business_development
+    authority: 6
+    tool_access: [communication, docs]
+    prompt_overlays: [souls/closer.md]
+    evaluation_rules: {strictness: high, dimensions: [roi_clarity, risk_removal]}
+
+  intelligence:
+    role: researcher
+    domain: market_intelligence
+    authority: 5
+    tool_access: [web, x, knowledge, notes]
+    prompt_overlays: [souls/intelligence.md]
+    evaluation_rules: {strictness: high, dimensions: [signal_noise, provenance]}
+
+  orchestrator:
+    role: operator
+    domain: systems
+    authority: 7
+    tool_access: [scheduler, operations, git, monitoring]
+    prompt_overlays: [souls/orchestrator.md]
+    evaluation_rules: {strictness: medium, require_approval: true}
+
+  hvac-expert:
+    role: domain_specialist
+    domain: home_services
+    authority: 6
+    tool_access: [knowledge, docs, communication]
+    prompt_overlays: [souls/hvac-expert.md]
+    preferred_capabilities: [audio, long_context]
+    evaluation_rules: {strictness: high, dimensions: [domain_accuracy, practical_roi]}
+
+  cdl-expert:
+    role: domain_specialist
+    domain: trucking_logistics
+    authority: 6
+    tool_access: [knowledge, docs, communication]
+    prompt_overlays: [souls/cdl-expert.md]
+    preferred_capabilities: [long_context, code_execution]
+    evaluation_rules: {strictness: high, dimensions: [operational_leverage, domain_accuracy]}
+
+  rainmaker:
+    role: offer_architect
+    domain: business_development
+    authority: 7
+    tool_access: [knowledge, docs, communication, creative-studio]
+    prompt_overlays: [souls/rainmaker.md]
+    evaluation_rules: {strictness: high, dimensions: [offer_clarity, value_stacking]}
+
+# Merge rules: when multiple souls are selected, the most specific domain expert
+# contributes domain knowledge; main contributes coordination; authority = max.
+merge_rules:
+  authority: max
+  tool_access: union
+  prompt_overlays: union
+  preferred_capabilities: union
+  evaluation_rules: most_specific
