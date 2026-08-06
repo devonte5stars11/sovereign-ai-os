@@ -113,6 +113,47 @@ class EvaluationStore:
     def count(self) -> int:
         return int(self._conn.execute("SELECT COUNT(*) FROM runs").fetchone()[0])
 
+    # -- cost intelligence (see ADR-0010) --------------------------------
+    def cost_by_provider(self) -> dict[str, float]:
+        rows = self._conn.execute(
+            "SELECT provider, SUM(cost_usd) FROM runs WHERE provider IS NOT NULL "
+            "GROUP BY provider ORDER BY SUM(cost_usd) DESC"
+        ).fetchall()
+        return {p: float(c or 0.0) for p, c in rows}
+
+    def cost_by_workflow(self) -> dict[str, float]:
+        rows = self._conn.execute(
+            "SELECT workflow, SUM(cost_usd) FROM runs GROUP BY workflow ORDER BY SUM(cost_usd) DESC"
+        ).fetchall()
+        return {w: float(c or 0.0) for w, c in rows}
+
+    def cost_by_day(self, limit: int = 30) -> dict[str, float]:
+        rows = self._conn.execute(
+            "SELECT substr(ts, 1, 10) AS day, SUM(cost_usd) FROM runs "
+            "GROUP BY day ORDER BY day DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return {d: float(c or 0.0) for d, c in reversed(rows)}
+
+    def monthly_cost(self, year: int | None = None, month: int | None = None) -> float:
+
+        now = datetime.now(timezone.utc)
+        year = year or now.year
+        month = month or now.month
+        prefix = f"{year:04d}-{month:02d}"
+        row = self._conn.execute(
+            "SELECT COALESCE(SUM(cost_usd), 0) FROM runs WHERE ts LIKE ?",
+            (f"{prefix}%",),
+        ).fetchone()
+        return float(row[0])
+
+    def within_monthly_budget(
+        self, max_usd: float, year: int | None = None, month: int | None = None
+    ) -> tuple[float, bool]:
+        """Return (current_month_spend, within_budget)."""
+        spend = self.monthly_cost(year, month)
+        return spend, spend <= max_usd
+
     def export_markdown(self, path: str | Path) -> Path:
         """Write a human-readable markdown mirror of recent runs."""
         out = Path(path)

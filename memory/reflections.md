@@ -112,3 +112,53 @@
 **Latency:** 0ms | cost $0.00000
 **Artifact:** f0bca1af-a605-47ab-96b2-19ded3b67057
 **Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 09:10 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 513a646c-8c43-46e6-9fc9-6dd190036b9d
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 15:26 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** c94cee3b-73c7-4375-9ae2-acc4f919194f
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 15:27 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 6aa28a2f-0dc4-40dd-a442-2e31403e7461
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 15:29 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 2277c67a-c0a9-481c-9e74-3515f097cec2
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 15:35 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 5c78829b-d2ed-445e-8a2d-fec1736aaa6d
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']

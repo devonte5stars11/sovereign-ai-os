@@ -61,3 +61,25 @@ def test_artifact_metadata_complete():
         "timestamp",
     ]:
         assert key in d
+
+
+def test_confidence_freshness_fields():
+    a = (
+        Artifact(type="note", creator="wf", content="x", confidence=0.97, verified_by="human")
+        .seal()
+        .mark_verified("human")
+    )
+    assert a.confidence == 0.97
+    assert a.verified_by == "human"
+    assert a.freshness  # bumped by mark_verified
+    assert a.to_dict()["confidence"] == 0.97
+
+
+def test_artifact_expiry_detected():
+    from datetime import datetime, timedelta, timezone
+
+    past = (datetime.now(timezone.utc) - timedelta(seconds=1)).isoformat()
+    future = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
+    assert Artifact(type="t", creator="c", content="", expiry=past).is_expired
+    assert not Artifact(type="t", creator="c", content="", expiry=future).is_expired
+    assert not Artifact(type="t", creator="c", content="").is_expired

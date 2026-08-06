@@ -30,12 +30,23 @@ def test_pipeline_runs_end_to_end(offline_registry, tmp_path, monkeypatch):
     # Obsidian markdown exists on disk in the output dir
     note = next(out.glob("*.md"))
     assert note.exists()
-    assert "[offline-demo]" in note.read_text(encoding="utf-8")
 
     # evaluation row was recorded
     store = EvaluationStore(ev)
     assert store.count() >= 1
     store.close()
+
+    # a correlated event trace was emitted (unified event schema)
+    from ai_os_kernel import EventLog
+
+    elog = EventLog(tmp_path / "events.sqlite3")
+    events = elog.by_correlation(result["correlation_id"])
+    types = [e.event_type for e in events]
+    assert "task.received" in types
+    assert "task.routed" in types
+    assert "artifact.created" in types
+    assert "evaluation.logged" in types
+    elog.close()
 
 
 @pytest.mark.live

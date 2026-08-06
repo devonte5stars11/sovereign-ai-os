@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import uuid
 from pathlib import Path
 
 from .adapters import GeminiAdapter, OfflineAdapter
@@ -27,6 +28,7 @@ from .capability_registry import AdapterRegistry, CapabilityRegistry
 from .capability_router import CapabilityRouter, TaskSpec
 from .context_packet import ContextPacket
 from .evaluation_store import EvaluationStore
+from .events import EventLog
 from .profiles import ProfileManager
 from .prompt_graph import GraphNode, PromptGraph
 from .provider import CompletionRequest, Message
@@ -61,6 +63,7 @@ def run_pipeline(
     output_dir: str | Path = "knowledge/output",
     eval_path: str | Path = "evaluation/eval.sqlite3",
     auto_git: bool = True,
+    event_log: EventLog | None = None,
 ) -> dict:
     souls = souls or ["main"]
     registry = registry or build_default_registry()
@@ -69,10 +72,19 @@ def run_pipeline(
     if not output_dir.is_absolute():
         output_dir = root / output_dir
 
+    # Unified event trace for this whole run.
+    correlation_id = str(uuid.uuid4())
+    event_log = event_log or EventLog(Path(eval_path).parent / "events.sqlite3")
+    emit = lambda et, **kw: event_log.emit(  # noqa: E731
+        et, source="pipeline", correlation_id=correlation_id, workflow_id="sovereign_note", **kw
+    )
+    emit("task.received", payload={"task": task})
+
     # ---- 1. Select & merge souls ---------------------------------------
     pm = ProfileManager(root / "profiles" / "soulvault.yaml")
     merged = pm.merge(*souls)
     profile_desc = merged.describe()
+    emit("souls.selected", payload={"souls": souls})
 
     # ---- 2. Route by capability -----------------------------------------
     cap_reg = CapabilityRegistry(registry.all(), ttl_seconds=0)  # fresh each run
@@ -89,6 +101,7 @@ def run_pipeline(
     adapter = registry.get(route.provider.provider)
     if adapter is None:
         raise RuntimeError(f"routed to missing adapter: {route.provider.provider}")
+    emit("task.routed", payload={"provider": route.provider.provider})
 
     # ---- 3. Prompt graph ------------------------------------------------
     graph = (
@@ -125,7 +138,7 @@ def run_pipeline(
     wf = Workflow(name="sovereign_note", graph=graph, approval_required=False)
     wf_registry = WorkflowRegistry()
     wf_registry.register(wf)
-    wf.promote()
+    wf.mark_validated().stage_candidate()
 
     # ---- 4. Provider execution ------------------------------------------
     packet = ContextPacket(
@@ -141,6 +154,15 @@ def run_pipeline(
     resp = adapter.complete(CompletionRequest(messages=[Message("user", prompt)], json_mode=False))
     if not resp.success:
         raise RuntimeError(f"adapter failed: {resp.error}")
+    emit(
+        "provider.invoked",
+        payload={
+            "provider": resp.provider,
+            "model": resp.model,
+            "latency_ms": resp.latency_ms,
+            "cost_usd": resp.cost_usd,
+        },
+    )
 
     # ---- 5. Artifact registry (checksummed) -----------------------------
     art_reg = ArtifactRegistry()
@@ -151,9 +173,15 @@ def run_pipeline(
         graph_version=graph.version,
         source=resp.provider,
         trust=0.9,
+        confidence=0.9,
         content=resp.text,
     ).seal()
     art_reg.add(artifact)
+    emit(
+        "artifact.created",
+        artifact_id=artifact.artifact_id,
+        payload={"checksum": artifact.checksum[:16]},
+    )
 
     # ---- 6. Obsidian markdown -------------------------------------------
     slug = _slugify(task)
@@ -163,6 +191,7 @@ def run_pipeline(
         _render_note(md_path, task, resp, artifact, merged, profile_desc),
         encoding="utf-8",
     )
+    emit("markdown.written", payload={"path": str(md_path)})
 
     # ---- 7. Git commit ---------------------------------------------------
     if auto_git:
@@ -174,6 +203,7 @@ def run_pipeline(
             "-m",
             f"pipeline: add {slug}.md (workflow=sovereign_note v{graph.version}) {artifact.artifact_id[:8]}",
         )
+    emit("git.committed", payload={"committed": auto_git})
 
     # ---- 8. Reflection ---------------------------------------------------
     reflection_path = root / "memory" / "reflections.md"
@@ -204,6 +234,7 @@ def run_pipeline(
     )
     store.export_markdown(Path(eval_path).parent / "log.md")
     store.close()
+    emit("evaluation.logged", payload={"run_id": run_id, "cost_usd": resp.cost_usd})
 
     try:
         markdown_ref = str(md_path.relative_to(root))
@@ -212,6 +243,7 @@ def run_pipeline(
 
     return {
         "run_id": run_id,
+        "correlation_id": correlation_id,
         "provider": resp.provider,
         "model": resp.model,
         "task": task,

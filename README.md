@@ -32,15 +32,16 @@ provider → drop in an adapter → routing adapts automatically.
 
 ## Highlights
 
-- **Capability-based routing** — the cheapecapable provider wins, no model names in router logic
+- **Capability-based routing** — the cheapest capable provider wins, no model names in router logic
 - **Provider abstraction** — same `ProviderAdapter` interface for Gemini, GPT, Grok, local; kernel never knows the vendor
 - **Runtime capability discovery** — adapters *report* their capabilities (TTL-cached), not hardcoded manifests
-- **Versioned Prompt Graph workflows** — G1–G4 DAGs with cycle detection, promotion, and evaluation
-- **Artifact registry** — every output is typed, checksummed, and provenanced (reproducible)
-- **SQLite evaluation database** — latency, cost, tokens, success, retries drive routing policy with evidence
-- **End-to-end pipeline** — request → route → adapter → graph → artifact → Obsidian markdown → git commit → reflection → evaluation
+- **Versioned Prompt Graph workflows** — G1–G4 DAGs with a **state machine** (draft→validated→candidate→promoted→deprecated→archived) and promotion
+- **Typed configuration** — manifests validated against a known vocabulary at load; invalid config fails fast at startup
+- **Artifact registry** — every output is typed, checksummed, and provenanced, with **confidence/freshness/verification** metadata
+- **Unified event trace** — every run emits one canonical event schema (correlated by `correlation_id`) for replay, audit, and analytics
+- **Cost intelligence** — SQLite rollups by provider/workflow/day/month + a monthly budget guard
 - **AI Constitution + Policy Engine** — cost discipline and approval gates enforced at runtime
-- **Integration-tested kernel** — 93 tests incl. transport-mocked adapter/retry/streaming coverage, with live-mode toggle
+- **Integration-tested kernel** — 111 tests incl. transport-mocked adapter/retry/streaming coverage, with live-mode toggle
 
 ## Status
 
@@ -50,8 +51,12 @@ provider → drop in an adapter → routing adapts automatically.
 | Provider abstraction   | ✅         |
 | Capability router      | ✅         |
 | Prompt Graph engine    | ✅         |
+| Workflow state machine | ✅         |
 | Dynamic capability discovery | ✅  |
+| Typed config validation| ✅         |
 | Artifact registry      | ✅         |
+| Unified event log      | ✅         |
+| Cost intelligence      | ✅         |
 | Evaluation pipeline    | ✅         |
 | Gemini adapter         | ✅         |
 | Offline mode           | ✅         |
@@ -114,8 +119,9 @@ set -a; source .env; set +a
 .venv/Scripts/python -m ai_os_kernel.cli souls main cdl-expert  # merge souls
 .venv/Scripts/python -m ai_os_kernel.cli adapters           # dynamic discovery + health
 .venv/Scripts/python -m ai_os_kernel.cli chat "message"     # one-shot completion
-.venv/Scripts/python -m ai_os_kernel.cli pipeline "task"    # full end-to-end pipeline
-.venv/Scripts/python -m ai_os_kernel.cli eval               # evaluation database
+.venv/Scripts/python -m ai_os_kernel.cli pipeline "task"    # full end-to-end pipeline (with event trace)
+.venv/Scripts/python -m ai_os_kernel.cli eval               # evaluation DB + cost intelligence
+.venv/Scripts/python -m ai_os_kernel.cli events             # view the unified event log
 ```
 
 ## Repository layout
@@ -135,11 +141,12 @@ ai-os/
 │       ├── capability_router.py   cheapest-capable routing
 │       ├── capability_registry.py runtime discovery + cache
 │       ├── prompt_graph.py        versioned DAGs
-│       ├── workflow_registry.py   versioned, evaluated workflows
-│       ├── artifact_registry.py   checksummed artifacts
-│       ├── evaluation_store.py    SQLite metrics
+│       ├── workflow_registry.py   versioned workflows + state machine
+│       ├── artifact_registry.py   checksummed artifacts + confidence
+│       ├── evaluation_store.py    SQLite metrics + cost intelligence
+│       ├── events.py              unified event schema + event log
 │       ├── constitution.py        AI Constitution + policy engine
-│       └── pipeline.py            end-to-end execution
+│       └── pipeline.py            end-to-end execution + event trace
 ├── tests/            unit + integration (transport-mocked) + live-toggle
 ├── docs/             architecture, ADRs, demo
 └── .github/workflows CI
@@ -160,6 +167,7 @@ All gates run automatically in CI on every push/PR across Python 3.10–3.12.
 ## Roadmap
 
 - [x] Kernel MVP + provider abstraction + Gemini/offline adapters
+- [x] Operational hardening: event trace, workflow state machine, typed config, cost intelligence
 - [ ] Additional adapters (GPT, Grok, local)
 - [ ] Knowledge slice — capture → clean → link → markdown → git → retrieval
 - [ ] Coding slice — repo editing, PR creation, artifact logging

@@ -1,5 +1,6 @@
 """EvaluationStore: durable per-run metrics + markdown mirror."""
 
+import pytest
 from ai_os_kernel import EvaluationStore
 
 
@@ -27,6 +28,33 @@ def test_rate_run(tmp_path):
     rid = store.record("wf", "offline")
     store.rate(rid, 4.5)
     assert store.recent(1)[0]["human_rating"] == 4.5
+
+
+def test_cost_by_provider_and_workflow(tmp_path):
+    store = EvaluationStore(tmp_path / "eval.sqlite3")
+    store.record("wfA", "gemini", cost_usd=0.5)
+    store.record("wfA", "offline", cost_usd=0.1)
+    store.record("wfB", "gemini", cost_usd=0.2)
+    assert store.cost_by_provider()["gemini"] == pytest.approx(0.7)
+    assert store.cost_by_workflow()["wfA"] == pytest.approx(0.6)
+
+
+def test_monthly_cost_and_budget(tmp_path):
+    store = EvaluationStore(tmp_path / "eval.sqlite3")
+    store.record("wf", "x", cost_usd=2.0)
+    spend, ok = store.within_monthly_budget(10.0)
+    assert spend >= 2.0
+    assert ok is True
+    _, not_ok = store.within_monthly_budget(1.0)
+    assert not_ok is False
+
+
+def test_cost_by_day(tmp_path):
+    store = EvaluationStore(tmp_path / "eval.sqlite3")
+    store.record("wf", "x", cost_usd=1.5)
+    days = store.cost_by_day(7)
+    assert len(days) >= 1
+    assert sum(days.values()) == pytest.approx(1.5)
 
 
 def test_export_markdown(tmp_path):

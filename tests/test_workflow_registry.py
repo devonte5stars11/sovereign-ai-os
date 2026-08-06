@@ -42,10 +42,33 @@ def test_invalid_graph_rejected():
 def test_promotion_lifecycle():
     wf = _valid_workflow("promo")
     assert wf.status == "draft"
-    wf.promote()
+    wf.mark_validated()
+    assert wf.status == "validated"
+    wf.stage_candidate()
     assert wf.status == "candidate"
     wf.promote()
     assert wf.status == "promoted"
+
+
+def test_illegal_transition_raises():
+    wf = _valid_workflow("wf")
+    assert wf.status == "draft"
+    with pytest.raises(WorkflowError):
+        wf.promote()  # draft -> promoted is not a legal transition
+    assert wf.status == "draft"
+
+
+def test_full_lifecycle_to_archive():
+    wf = _valid_workflow("wf")
+    wf.mark_validated().stage_candidate().promote().deprecate().archive()
+    assert wf.status == "archived"
+    with pytest.raises(WorkflowError):
+        wf.transition("deprecated")  # archived is terminal
+
+
+def test_stable_workflow_id():
+    wf = _valid_workflow("wf")
+    assert wf.workflow_id  # stable identity for the workflow
 
 
 def test_metrics_recorded():

@@ -98,7 +98,7 @@ def cmd_vertical(argv: list[str]) -> int:
     )
     reg = WorkflowRegistry()
     reg.register(wf)
-    wf.promote()
+    wf.mark_validated().stage_candidate()
     print(f"=> workflow '{wf.name}' registered & {wf.status} (order: {graph.order()})")
 
     artifact = Artifact(
@@ -179,6 +179,10 @@ def cmd_eval(argv: list[str]) -> int:
 
     store = EvaluationStore(REPO_ROOT / "evaluation" / "eval.sqlite3")
     print("summary:", store.summary())
+    print("cost by provider:", store.cost_by_provider())
+    print("cost by workflow:", store.cost_by_workflow())
+    spend, ok = store.within_monthly_budget(float("inf"))
+    print(f"monthly spend: ${spend:.5f} (within budget: {ok})")
     print("recent runs:")
     for r in store.recent(10):
         print(
@@ -187,6 +191,19 @@ def cmd_eval(argv: list[str]) -> int:
             f"ok={bool(r['success'])} retries={r['retries']}"
         )
     store.close()
+    return 0
+
+
+def cmd_events(argv: list[str]) -> int:
+    from .events import EventLog
+
+    log = EventLog(REPO_ROOT / "evaluation" / "events.sqlite3")
+    for e in log.recent(int(argv[0]) if argv else 20):
+        print(
+            f"{e.timestamp} [{e.event_type}] corr={e.correlation_id[:8]} "
+            f"src={e.source} payload={e.payload}"
+        )
+    log.close()
     return 0
 
 
@@ -199,6 +216,7 @@ COMMANDS = {
     "chat": cmd_chat,
     "pipeline": cmd_pipeline,
     "eval": cmd_eval,
+    "events": cmd_events,
 }
 
 

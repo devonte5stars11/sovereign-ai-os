@@ -23,15 +23,19 @@ def _now() -> str:
 
 @dataclass
 class Artifact:
-    """A versioned, provable artifact."""
+    """A versioned, provable artifact with provenance + confidence metadata."""
 
     type: str
     creator: str
     workflow: str = ""
     graph_version: int = 0
     source: str = ""
-    trust: float = 0.5  # 0..1
+    trust: float = 0.5  # 0..1 (legacy trust score)
     content: str = ""
+    confidence: float = 0.0  # 0..1 knowledge-confidence score (see ADR-0009)
+    freshness: str = ""  # ISO timestamp of last review/refresh
+    verified_by: str = ""  # actor who verified ("human", an evaluator, etc.)
+    expiry: str = ""  # ISO expiration, empty = no expiry
     artifact_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     checksum: str = ""
     timestamp: str = field(default_factory=_now)
@@ -48,6 +52,25 @@ class Artifact:
         """True if the stored checksum matches the current content."""
         return bool(self.checksum) and self.checksum == self.compute_checksum()
 
+    def mark_verified(self, by: str, freshness: str | None = None) -> Artifact:
+        """Record that this artifact was verified; bumps freshness."""
+        self.verified_by = by
+        self.freshness = freshness or _now()
+        return self
+
+    @property
+    def is_expired(self) -> bool:
+        """True if this artifact has passed its expiry (if any)."""
+        if not self.expiry:
+            return False
+        try:
+            from datetime import datetime as _dt
+
+            expiry = _dt.fromisoformat(self.expiry)
+            return _dt.now(expiry.tzinfo) > expiry
+        except ValueError:
+            return False
+
     def to_dict(self) -> dict:
         return {
             "artifact_id": self.artifact_id,
@@ -57,6 +80,10 @@ class Artifact:
             "graph_version": self.graph_version,
             "source": self.source,
             "trust": self.trust,
+            "confidence": self.confidence,
+            "freshness": self.freshness,
+            "verified_by": self.verified_by,
+            "expiry": self.expiry,
             "checksum": self.checksum,
             "timestamp": self.timestamp,
         }

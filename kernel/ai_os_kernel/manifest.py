@@ -24,6 +24,46 @@ class ManifestError(Exception):
     """Raised when a manifest is malformed or missing required fields."""
 
 
+# Canonical capability vocabulary (mirrors capabilities/catalog.yaml).
+KNOWN_CAPABILITIES = {
+    "long_context",
+    "code_execution",
+    "json_mode",
+    "tool_calling",
+    "streaming",
+    "vision",
+    "audio",
+    "browser",
+    "computer_use",
+    "file_editing",
+    "image_generation",
+    "video_generation",
+    "speech_generation",
+    "local",
+}
+
+
+def validate_manifest(manifest: ProviderManifest) -> list[str]:
+    """Return structural/semantic problems; empty list means the manifest is valid.
+
+    Used as a typed-config gate: unknown capabilities and negative costs are
+    caught at load time rather than surfacing later in routing.
+    """
+    problems: list[str] = []
+    if not manifest.provider:
+        problems.append("missing 'provider'")
+    if not manifest.version:
+        problems.append("missing 'version'")
+    unknown = sorted(manifest.capabilities - KNOWN_CAPABILITIES)
+    if unknown:
+        problems.append(f"unknown capabilities: {', '.join(unknown)}")
+    if manifest.cost_input_per_1k < 0:
+        problems.append("negative input cost")
+    if manifest.cost_output_per_1k < 0:
+        problems.append("negative output cost")
+    return problems
+
+
 @dataclass
 class ProviderManifest:
     """A single provider's public capability contract."""
@@ -103,7 +143,11 @@ def load_manifest(path: str | os.PathLike) -> ProviderManifest:
         raise ManifestError(f"manifest must be a mapping: {p}")
     if not data.get("provider"):
         raise ManifestError(f"manifest missing 'provider': {p}")
-    return ProviderManifest.from_dict(data, source=str(p))
+    manifest = ProviderManifest.from_dict(data, source=str(p))
+    problems = validate_manifest(manifest)
+    if problems:
+        raise ManifestError(f"invalid manifest {p}: {'; '.join(problems)}")
+    return manifest
 
 
 def load_manifests(

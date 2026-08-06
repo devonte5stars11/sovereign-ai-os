@@ -1,8 +1,8 @@
 """Provider manifest loading + capability declaration."""
 
 import pytest
-from ai_os_kernel import load_manifest
-from ai_os_kernel.manifest import ManifestError
+from ai_os_kernel import load_manifest, validate_manifest
+from ai_os_kernel.manifest import ManifestError, ProviderManifest
 
 
 def test_load_single_manifest(providers_dir):
@@ -62,4 +62,46 @@ def test_manifest_requires_provider(tmp_path):
     bad = tmp_path / "bad.yaml"
     bad.write_text("capabilities: {long_context: true}\n", encoding="utf-8")
     with pytest.raises(ManifestError):
+        load_manifest(bad)
+
+
+# -- typed-config validation (ADR-0006) ----------------------------------
+
+
+def test_validate_manifest_unknown_capability():
+    m = ProviderManifest(provider="x", version="1", capabilities={"long_context", "hoverboard"})
+    problems = validate_manifest(m)
+    assert any("hoverboard" in p for p in problems)
+
+
+def test_validate_manifest_negative_cost():
+    m = ProviderManifest(
+        provider="x",
+        version="1",
+        capabilities={"json_mode"},
+        cost_input_per_1k=-1.0,
+    )
+    assert any("negative" in p for p in validate_manifest(m))
+
+
+def test_validate_manifest_ok():
+    m = ProviderManifest(provider="x", version="1", capabilities={"json_mode", "streaming"})
+    assert validate_manifest(m) == []
+
+
+def test_load_manifest_rejects_invalid(tmp_path):
+    import yaml
+
+    bad = tmp_path / "bad.yaml"
+    bad.write_text(
+        yaml.safe_dump(
+            {
+                "provider": "x",
+                "version": "1",
+                "capabilities": {"json_mode": True, "bogus_cap": True},
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ManifestError, match="invalid manifest"):
         load_manifest(bad)

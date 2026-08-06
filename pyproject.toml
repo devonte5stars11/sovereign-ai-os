@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-os-kernel"
-version = "5.1.0"
+version = "5.2.0"
 description = "Reference kernel for the Sovereign Hermes AI OS — capability routing, prompt graphs, workflow registry, artifacts, constitution."
 readme = "README.md"
 requires-python = ">=3.10"
