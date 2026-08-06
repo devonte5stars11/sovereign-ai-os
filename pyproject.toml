@@ -24,3 +24,6 @@ packages = ["ai_os_kernel"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "live: runs against a real provider API; requires credentials (skipped otherwise)",
+]

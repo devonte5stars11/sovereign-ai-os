@@ -24,6 +24,10 @@ credentials/
 *.pem
 *.key
 
+# Evaluation database (binary; the human-readable mirror log.md is committed)
+*.sqlite3
+evaluation/eval.sqlite3
+
 # Local knowledge that should NOT be committed (client sandboxes, private artifacts)
 knowledge/private/
 artifact-registry/private/

@@ -42,3 +42,23 @@
 **Latency:** 0ms | cost $0.00000
 **Artifact:** 53b14b9e-6f9d-481e-8c08-87af6f824697
 **Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 01:20 UTC — pipeline run
+**Task:** How a CDL owner-operator can cut fuel costs
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 340abfc7-2055-40b5-9d8f-8c2a5ac77906
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 01:22 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 887a9811-833a-40ea-b6d3-31b72548d275
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']

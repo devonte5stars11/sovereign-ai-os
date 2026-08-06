@@ -38,6 +38,12 @@ def test_pipeline_runs_end_to_end(offline_registry, tmp_path, monkeypatch):
     store.close()
 
 
+import pytest
+
+from ai_os_kernel import run_pipeline
+
+
+@pytest.mark.live
 def test_pipeline_with_live_key_uses_gemini(monkeypatch, tmp_path):
     """Gated: only runs when a real GEMINI_API_KEY is present."""
     key = None

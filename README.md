@@ -16,7 +16,7 @@ python -m venv .venv
 
 ## Commands
 ```bash
-# List provider capability manifests
+# List provider capability manifests (static defaults)
 .venv/Scripts/python -m ai_os_kernel.cli capabilities
 
 # Route a task by required capabilities to the cheapest capable provider
@@ -26,9 +26,52 @@ python -m venv .venv
 # Merge souls into a working profile
 .venv/Scripts/python -m ai_os_kernel.cli souls main cdl-expert closer visionary
 
-# Run the end-to-end vertical slice (no live provider needed)
+# Async pipeline (Kernel MVP)
 .venv/Scripts/python -m ai_os_kernel.cli vertical
+
+# NEW — provider adapters (dynamic discovery + health)
+.venv/Scripts/python -m ai_os_kernel.cli adapters
+
+# NEW — one-shot completion via the active adapter (offline by default)
+.venv/Scripts/python -m ai_os_kernel.cli chat "Summarize fleet fuel optimization"
+
+# NEW — full end-to-end milestone pipeline
+.venv/Scripts/python -m ai_os_kernel.cli pipeline "How a CDL owner-operator can cut fuel costs"
+
+# NEW — inspect the evaluation database
+.venv/Scripts/python -m ai_os_kernel.cli eval
 ```
+
+## Provider abstraction & live mode
+Every provider implements the same `ProviderAdapter` contract
+(`kernel/ai_os_kernel/provider.py`): `capabilities()`, `health()`, `complete()`,
+`stream()`, `tool_call()`, `embeddings()`. The kernel only ever talks to this
+interface — it never knows which provider is executing.
+
+- **Gemini** is the first real adapter (`adapters/gemini.py`), talking to the
+  Google Generative Language API with injected transport for testability.
+- **Offline** (`adapters/offline.py`) is a credential-free demo adapter.
+
+**Go live** by setting a key and rerunning — no code changes:
+```bash
+cp .env.example .env        # GEMINI_API_KEY=your_key_here
+set -a; source .env; set +a   # load it into the env
+.venv/Scripts/python -m ai_os_kernel.cli pipeline "your live task"
+```
+
+Capabilities are **discovered dynamically** at runtime (cached with a TTL) via
+`CapabilityRegistry` instead of being hardcoded forever — adapters report their
+capabilities and health, and those feed routing.
+
+## Testing
+```bash
+.venv/Scripts/python -m pytest -q            # unit + integration (transport-mocked)
+.venv/Scripts/python -m pytest -q -m live    # live API tests (skipped without key)
+```
+
+The transport-mocked integration tests exercise the real adapter code path
+(request building, response parsing, retry/backoff, streaming, json mode)
+against a fake HTTP session — no network or credentials required to run them.
 
 ## What's in the box
 | Path | Contents |
