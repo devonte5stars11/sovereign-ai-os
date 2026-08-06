@@ -117,11 +117,77 @@ def cmd_vertical(argv: list[str]) -> int:
     return 0
 
 
+def cmd_adapters(argv: list[str]) -> int:
+    from .adapters import GeminiAdapter, OfflineAdapter
+    from .capability_registry import AdapterRegistry, CapabilityRegistry
+
+    reg = AdapterRegistry()
+    reg.register(OfflineAdapter())
+    reg.register(GeminiAdapter())  # always show; health reports key presence
+    cap = CapabilityRegistry(reg.all(), ttl_seconds=0)
+    for m in cap.refresh():
+        h = reg.get(m.provider).health()
+        print(f"{m.provider:<10} ok={str(h.ok):<5} latency={h.latency_ms:.1f}ms "
+              f"caps={len(m.capabilities)}")
+        if not h.ok and h.error:
+            print(f"           health: {h.error}")
+    return 0
+
+
+def cmd_chat(argv: list[str]) -> int:
+    from .pipeline import build_default_registry
+    from .provider import CompletionRequest, Message
+
+    prompt = " ".join(argv) or "Say hello."
+    reg = build_default_registry()
+    adapter = reg.all()[0]
+    print(f"provider: {adapter.name} (mode={'live' if 'GEMINI_API_KEY' in __import__('os').environ else 'offline'})")
+    resp = adapter.complete(CompletionRequest(messages=[Message("user", prompt)]))
+    if not resp.success:
+        print(f"ERROR: {resp.error}")
+        return 1
+    print(resp.text)
+    print(f"\n[latency={resp.latency_ms:.0f}ms cost=${resp.cost_usd:.5f} "
+          f"tokens={resp.prompt_tokens}/{resp.completion_tokens}]")
+    return 0
+
+
+def cmd_pipeline(argv: list[str]) -> int:
+    from .pipeline import run_pipeline
+
+    task = " ".join(argv)
+    if not task:
+        task = "Sample sovereign note: how a CDL owner-operator can save fuel costs"
+    result = run_pipeline(task, souls=["main", "cdl-expert"])
+    print("full pipeline complete.")
+    for k, v in result.items():
+        print(f"  {k:<12} {v}")
+    return 0
+
+
+def cmd_eval(argv: list[str]) -> int:
+    from .evaluation_store import EvaluationStore
+
+    store = EvaluationStore(REPO_ROOT / "evaluation" / "eval.sqlite3")
+    print("summary:", store.summary())
+    print("recent runs:")
+    for r in store.recent(10):
+        print(f"  #{r['id']} {r['workflow']:<16} {r['provider']:<8} "
+              f"{r['latency_ms']:.0f}ms ${r['cost_usd']:.5f} "
+              f"ok={bool(r['success'])} retries={r['retries']}")
+    store.close()
+    return 0
+
+
 COMMANDS = {
     "capabilities": cmd_capabilities,
     "route": cmd_route,
     "souls": cmd_souls,
     "vertical": cmd_vertical,
+    "adapters": cmd_adapters,
+    "chat": cmd_chat,
+    "pipeline": cmd_pipeline,
+    "eval": cmd_eval,
 }
 
 

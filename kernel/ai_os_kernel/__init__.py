@@ -23,6 +23,18 @@ from .prompt_graph import PromptGraph, GraphNode
 from .workflow_registry import WorkflowRegistry, Workflow
 from .artifact_registry import Artifact, ArtifactRegistry
 from .constitution import Constitution, PolicyEngine
+from .provider import (
+    ProviderAdapter,
+    CompletionRequest,
+    CompletionResponse,
+    HealthStatus,
+    Message,
+    HttpClient,
+    ProviderError,
+)
+from .capability_registry import AdapterRegistry, CapabilityRegistry
+from .evaluation_store import EvaluationStore
+from .pipeline import build_default_registry, run_pipeline
 
 __all__ = [
     "ProviderManifest", "load_manifest", "load_manifests",
@@ -34,6 +46,11 @@ __all__ = [
     "WorkflowRegistry", "Workflow",
     "Artifact", "ArtifactRegistry",
     "Constitution", "PolicyEngine",
+    "ProviderAdapter", "CompletionRequest", "CompletionResponse",
+    "HealthStatus", "Message", "HttpClient", "ProviderError",
+    "AdapterRegistry", "CapabilityRegistry",
+    "EvaluationStore",
+    "build_default_registry", "run_pipeline",
 ]
 
 __version__ = "5.1.0"

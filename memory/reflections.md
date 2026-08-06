@@ -22,3 +22,23 @@
 - Wire a real provider adapter + capability tests.
 - Add Context Budget Manager (Need → Retrieve → Compress → Rank → Assemble).
 - Add evaluation node recording real latency/cost.
+
+---
+
+## 2026-08-06 01:17 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** b920f1ee-b0af-470c-8423-0db0463cd546
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
+
+---
+
+## 2026-08-06 01:20 UTC — pipeline run
+**Task:** A note about fuel saving for CDL owner-operators
+**Workflow:** sovereign_note v1
+**Provider:** offline (offline-demo)
+**Latency:** 0ms | cost $0.00000
+**Artifact:** 53b14b9e-6f9d-481e-8c08-87af6f824697
+**Graph order:** ['planner', 'writer', 'verifier', 'aggregator']
