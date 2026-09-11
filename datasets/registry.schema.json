@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aether.local/schemas/dataset-registry.schema.json",
+  "title": "Aether Dataset Registry Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "dataset_id",
+    "name",
+    "version",
+    "purpose",
+    "owner",
+    "source_type",
+    "provenance_uri",
+    "license_or_usage_basis",
+    "sensitivity",
+    "tenant_scope",
+    "pii_classification",
+    "retention_policy",
+    "storage_location",
+    "schema_version",
+    "created_at",
+    "last_updated_at",
+    "quality_checks",
+    "eval_allowed",
+    "training_allowed",
+    "provider_disclosure_allowed",
+    "deletion_method"
+  ],
+  "properties": {
+    "dataset_id": {"type": "string", "minLength": 1},
+    "name": {"type": "string", "minLength": 1},
+    "version": {"type": "string", "minLength": 1},
+    "purpose": {"type": "string", "minLength": 1},
+    "owner": {"type": "string", "minLength": 1},
+    "source_type": {
+      "type": "string",
+      "enum": ["synthetic", "production", "public", "licensed", "user_owned", "mixed"]
+    },
+    "provenance_uri": {"type": "string", "minLength": 1},
+    "license_or_usage_basis": {"type": "string", "minLength": 1},
+    "sensitivity": {
+      "type": "string",
+      "enum": ["public", "internal", "private", "confidential", "highly_sensitive"]
+    },
+    "tenant_scope": {"type": "string", "minLength": 1},
+    "pii_classification": {
+      "type": "string",
+      "enum": ["none", "possible", "contains_pii", "regulated_sensitive"]
+    },
+    "retention_policy": {"type": "string", "minLength": 1},
+    "storage_location": {"type": "string", "minLength": 1},
+    "schema_version": {"type": "string", "minLength": 1},
+    "row_or_object_count": {"type": ["integer", "null"], "minimum": 0},
+    "created_at": {"type": "string", "format": "date-time"},
+    "last_updated_at": {"type": "string", "format": "date-time"},
+    "quality_checks": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1}
+    },
+    "eval_allowed": {"type": "boolean"},
+    "training_allowed": {"type": "boolean"},
+    "provider_disclosure_allowed": {
+      "oneOf": [
+        {"type": "boolean"},
+        {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true}
+      ]
+    },
+    "deletion_method": {"type": "string", "minLength": 1},
+    "supersedes": {"type": ["string", "null"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}
